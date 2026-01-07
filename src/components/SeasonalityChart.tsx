@@ -59,6 +59,11 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
 
     useEffect(() => {
         const loadWeather = async () => {
+            if (!period1Start || !period1End || !period2Start || !period2End) {
+                setWeatherData1(null);
+                setWeatherData2(null);
+                return;
+            }
             setLoadingWeather(true);
             const w1 = await fetchWeatherData(period1Start, period1End);
             const w2 = await fetchWeatherData(period2Start, period2End);

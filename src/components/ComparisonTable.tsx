@@ -16,16 +16,38 @@ interface ComparisonTableProps {
 }
 
 export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions }) => {
-    const currentYear = new Date().getFullYear();
-
-    // Default to comparing current year vs previous year
-    const [period1Start, setPeriod1Start] = useState(`${currentYear - 1}-01-01`);
-    const [period1End, setPeriod1End] = useState(`${currentYear - 1}-12-31`);
-    const [period2Start, setPeriod2Start] = useState(`${currentYear}-01-01`);
-    const [period2End, setPeriod2End] = useState(`${currentYear}-12-31`);
+    // Default to empty to wait for user input
+    const [period1Start, setPeriod1Start] = useState('');
+    const [period1End, setPeriod1End] = useState('');
+    const [period2Start, setPeriod2Start] = useState('');
+    const [period2End, setPeriod2End] = useState('');
     const [selectedType, setSelectedType] = useState('Tutti');
 
     const [firestoreTypes, setFirestoreTypes] = useState<string[]>([]);
+
+    // Helper for quick year selection
+    const handleYearSelect = (year: number, period: 1 | 2) => {
+        if (period === 1) {
+            setPeriod1Start(`${year}-01-01`);
+            setPeriod1End(`${year}-12-31`);
+        } else {
+            setPeriod2Start(`${year}-01-01`);
+            setPeriod2End(`${year}-12-31`);
+        }
+    };
+
+    const availableYears = useMemo(() => {
+        const years = new Set<number>();
+        const currentYear = new Date().getFullYear();
+        years.add(currentYear);
+        years.add(currentYear - 1);
+        years.add(currentYear - 2);
+
+        interventions.forEach(i => {
+            years.add(i.date.toDate().getFullYear());
+        });
+        return Array.from(years).sort((a, b) => b - a);
+    }, [interventions]);
 
     useEffect(() => {
         const fetchTypes = async () => {
@@ -56,6 +78,8 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
     }, [interventions, firestoreTypes]);
 
     const stats = useMemo(() => {
+        if (!period1Start || !period1End || !period2Start || !period2End) return [];
+
         const p1Start = new Date(period1Start).getTime();
         const p1End = new Date(period1End).getTime();
         const p2Start = new Date(period2Start).getTime();
@@ -113,12 +137,12 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
     const chartData = [
         {
             name: 'Periodo 1',
-            Fatturato: totals.p1Amount,
+            Incassato: totals.p1Amount,
             Interventi: totals.p1Count
         },
         {
             name: 'Periodo 2',
-            Fatturato: totals.p2Amount,
+            Incassato: totals.p2Amount,
             Interventi: totals.p2Count
         }
     ];
@@ -131,7 +155,20 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
             <div style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: '1fr', marginBottom: '2rem', background: 'var(--background)', padding: '1rem', borderRadius: 'var(--radius)' }}>
                 <div style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
                     <div>
-                        <label className="label">Periodo 1</label>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <label className="label" style={{ marginBottom: 0 }}>Periodo 1</label>
+                            <select
+                                className="input"
+                                style={{ padding: '0.25rem', fontSize: '0.8rem', width: 'auto' }}
+                                onChange={(e) => handleYearSelect(parseInt(e.target.value), 1)}
+                                defaultValue=""
+                            >
+                                <option value="" disabled>Anno...</option>
+                                {availableYears.map(year => (
+                                    <option key={`p1-${year}`} value={year}>{year}</option>
+                                ))}
+                            </select>
+                        </div>
                         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                             <input
                                 type="date"
@@ -151,7 +188,20 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
                     </div>
 
                     <div>
-                        <label className="label">Periodo 2</label>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <label className="label" style={{ marginBottom: 0 }}>Periodo 2</label>
+                            <select
+                                className="input"
+                                style={{ padding: '0.25rem', fontSize: '0.8rem', width: 'auto' }}
+                                onChange={(e) => handleYearSelect(parseInt(e.target.value), 2)}
+                                defaultValue=""
+                            >
+                                <option value="" disabled>Anno...</option>
+                                {availableYears.map(year => (
+                                    <option key={`p2-${year}`} value={year}>{year}</option>
+                                ))}
+                            </select>
+                        </div>
                         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                             <input
                                 type="date"
@@ -193,7 +243,7 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
             {/* Charts */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
                 <div style={{ height: '300px' }}>
-                    <h4 style={{ textAlign: 'center', marginBottom: '1rem', color: 'var(--text-secondary)' }}>Confronto Fatturato (€)</h4>
+                    <h4 style={{ textAlign: 'center', marginBottom: '1rem', color: 'var(--text-secondary)' }}>Confronto Incassato (€)</h4>
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={chartData}>
                             <CartesianGrid strokeDasharray="3 3" />
@@ -201,7 +251,7 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
                             <YAxis />
                             <Tooltip formatter={(value) => `€${Number(value).toFixed(2)}`} />
                             <Legend />
-                            <Bar dataKey="Fatturato" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="Incassato" fill="var(--primary)" radius={[4, 4, 0, 0]} />
                         </BarChart>
                     </ResponsiveContainer>
                 </div>

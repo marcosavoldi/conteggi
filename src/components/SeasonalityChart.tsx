@@ -160,7 +160,11 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
     }, [interventions, period1Start, period1End, period2Start, period2End, selectedType, weatherData1, weatherData2]);
 
     const handleChartClick = (data: any) => {
-        if (!data || !data.activePayload) return;
+        console.log("Chart Clicked:", data);
+        if (!data || !data.activePayload) {
+            console.log("No active payload");
+            return;
+        }
 
         const monthIndex = data.activePayload[0].payload.monthIndex;
         const monthName = data.activePayload[0].payload.name;

@@ -4,7 +4,7 @@ import {
 } from 'recharts';
 import { fetchWeatherData, type WeatherData } from '../services/weather';
 import { CloudSun } from 'lucide-react';
-import { DailyDetailModal } from './DailyDetailModal';
+import { DailyDetailModal, DailyComparisonData } from './DailyDetailModal';
 
 interface Intervention {
     id: string;
@@ -52,10 +52,10 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
 
     // Modal State
     const [modalOpen, setModalOpen] = useState(false);
-    const [modalData, setModalData] = useState<any[]>([]);
+    const [modalData, setModalData] = useState<DailyComparisonData[]>([]);
     const [modalMonth, setModalMonth] = useState('');
-    const [modalYear, setModalYear] = useState(0);
-    const [modalColor, setModalColor] = useState('');
+    const [modalYear1, setModalYear1] = useState(0);
+    const [modalYear2, setModalYear2] = useState(0);
 
     useEffect(() => {
         const loadWeather = async () => {
@@ -121,8 +121,8 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
             });
         };
 
-        processInterventions(period1Start, period1End, 'p1Count');
-        processInterventions(period2Start, period2End, 'p2Count');
+        if (period1Start && period1End) processInterventions(period1Start, period1End, 'p1Count');
+        if (period2Start && period2End) processInterventions(period2Start, period2End, 'p2Count');
 
         // Helper to process weather
         const processWeather = (weatherMap: Record<string, WeatherData> | null, keyPrefix: 'p1' | 'p2') => {
@@ -167,44 +167,25 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
     const handleChartClick = (data: any) => {
         let monthIndex = -1;
         let monthName = '';
-        let p1Count = 0;
-        let p2Count = 0;
 
         if (data && data.activePayload && data.activePayload.length > 0) {
             monthIndex = data.activePayload[0].payload.monthIndex;
             monthName = data.activePayload[0].payload.name;
-            p1Count = data.activePayload[0].payload.p1Count;
-            p2Count = data.activePayload[0].payload.p2Count;
         } else if (data && data.activeLabel) {
             // Fallback to activeLabel
             monthName = data.activeLabel;
             const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
             monthIndex = months.indexOf(monthName);
-
-            // Find data item to get counts
-            const dataItem = chartData.find(d => d.name === monthName);
-            if (dataItem) {
-                p1Count = dataItem.p1Count;
-                p2Count = dataItem.p2Count;
-            }
         }
 
         if (monthIndex === -1) return;
 
-        // Determine which year to show
-        // Default to Period 2 (Current), but if P2 is empty and P1 has data, show P1
-        let year = new Date(period2Start).getFullYear();
-        let weatherMap = weatherData2;
-        let color = 'var(--success)';
-
-        if (p2Count === 0 && p1Count > 0) {
-            year = new Date(period1Start).getFullYear();
-            weatherMap = weatherData1;
-            color = 'var(--primary)';
-        }
+        // Determine years
+        const year1 = new Date(period1Start).getFullYear();
+        const year2 = new Date(period2Start).getFullYear();
 
         // Filter daily data for that month
-        const dailyData: any[] = [];
+        const dailyData: DailyComparisonData[] = [];
 
         // Helper to normalize type
         const normalizeType = (str: string) => {
@@ -214,7 +195,9 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
         };
 
         // 1. Get Interventions for that month/year
-        const monthInterventions: Record<number, number> = {};
+        const monthInterventionsP1: Record<number, number> = {};
+        const monthInterventionsP2: Record<number, number> = {};
+
         interventions.forEach(i => {
             const date = i.date.toDate();
             const type = normalizeType(i.type);
@@ -222,33 +205,49 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
 
             if (targetType !== 'Tutti' && type !== targetType) return;
 
-            if (date.getFullYear() === year && date.getMonth() === monthIndex) {
+            if (date.getMonth() === monthIndex) {
                 const day = date.getDate();
-                monthInterventions[day] = (monthInterventions[day] || 0) + 1;
+                if (date.getFullYear() === year1) {
+                    monthInterventionsP1[day] = (monthInterventionsP1[day] || 0) + 1;
+                } else if (date.getFullYear() === year2) {
+                    monthInterventionsP2[day] = (monthInterventionsP2[day] || 0) + 1;
+                }
             }
         });
 
         // 2. Get Weather for that month/year
-        const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+        const daysInMonth = new Date(year2, monthIndex + 1, 0).getDate(); // Use year2 (current) for days in month
 
         for (let d = 1; d <= daysInMonth; d++) {
-            const dateStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            const weather = weatherMap ? weatherMap[dateStr] : null;
+            const dateStr1 = `${year1}-${String(monthIndex + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const dateStr2 = `${year2}-${String(monthIndex + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+
+            const weather1 = weatherData1 ? weatherData1[dateStr1] : null;
+            const weather2 = weatherData2 ? weatherData2[dateStr2] : null;
 
             dailyData.push({
                 day: d,
-                date: dateStr,
-                count: monthInterventions[d] || 0,
-                tempMax: weather ? weather.tempMax : 0,
-                tempMin: weather ? weather.tempMin : 0,
-                rain: weather ? weather.precipitation : 0
+                p1: {
+                    date: dateStr1,
+                    count: monthInterventionsP1[d] || 0,
+                    tempMax: weather1 ? weather1.tempMax : 0,
+                    tempMin: weather1 ? weather1.tempMin : 0,
+                    rain: weather1 ? weather1.precipitation : 0
+                },
+                p2: {
+                    date: dateStr2,
+                    count: monthInterventionsP2[d] || 0,
+                    tempMax: weather2 ? weather2.tempMax : 0,
+                    tempMin: weather2 ? weather2.tempMin : 0,
+                    rain: weather2 ? weather2.precipitation : 0
+                }
             });
         }
 
         setModalData(dailyData);
         setModalMonth(monthName);
-        setModalYear(year);
-        setModalColor(color);
+        setModalYear1(year1);
+        setModalYear2(year2);
         setModalOpen(true);
     };
 
@@ -284,7 +283,7 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
                         </div>
                     </div>
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.5rem', fontStyle: 'italic' }}>
-                        Clicca per dettagli giornalieri (Periodo 2)
+                        Clicca per dettagli giornalieri
                     </p>
                 </div>
             );
@@ -337,17 +336,14 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
                     </ComposedChart>
                 </ResponsiveContainer>
             </div>
-            <p style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '1rem' }}>
-                Dati meteo storici per Bergamo (Open-Meteo API). Clicca sul grafico per i dettagli giornalieri.
-            </p>
 
             <DailyDetailModal
                 isOpen={modalOpen}
                 onClose={() => setModalOpen(false)}
                 monthName={modalMonth}
-                year={modalYear}
+                year1={modalYear1}
+                year2={modalYear2}
                 data={modalData}
-                color={modalColor}
             />
         </div>
     );

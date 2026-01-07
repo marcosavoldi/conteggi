@@ -15,27 +15,35 @@ interface ExcelRow {
 export const ExcelImport: React.FC = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [loading, setLoading] = useState(false);
+    const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
     const handleButtonClick = () => {
         fileInputRef.current?.click();
     };
 
-    const parseExcelDate = (excelDate: number | string): Date => {
+    const parseExcelDate = (excelDate: number | string, targetYear: number): Date => {
+        let date = new Date();
+
         if (typeof excelDate === 'number') {
             // Excel date serial number
-            return new Date(Math.round((excelDate - 25569) * 86400 * 1000));
-        }
-        // Try parsing string date (e.g., "10/01/24")
-        if (typeof excelDate === 'string') {
+            date = new Date(Math.round((excelDate - 25569) * 86400 * 1000));
+        } else if (typeof excelDate === 'string') {
+            // Try parsing string date (e.g., "10/01/24")
             const parts = excelDate.split('/');
             if (parts.length === 3) {
-                // Assuming DD/MM/YY or DD/MM/YYYY
                 let year = parseInt(parts[2]);
                 if (year < 100) year += 2000;
-                return new Date(year, parseInt(parts[1]) - 1, parseInt(parts[0]));
+                date = new Date(year, parseInt(parts[1]) - 1, parseInt(parts[0]));
             }
         }
-        return new Date(); // Fallback
+
+        // Auto-correct year if it doesn't match the selected target year
+        if (date.getFullYear() !== targetYear) {
+            console.warn(`Correcting date ${date.toLocaleDateString()} to year ${targetYear}`);
+            date.setFullYear(targetYear);
+        }
+
+        return date;
     };
 
     const parseAmount = (amount: number | string): number => {
@@ -51,6 +59,11 @@ export const ExcelImport: React.FC = () => {
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        if (!window.confirm(`Stai per importare i dati forzando l'anno al ${selectedYear}. Confermi?`)) {
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            return;
+        }
 
         setLoading(true);
         try {
@@ -83,7 +96,7 @@ export const ExcelImport: React.FC = () => {
                 }
 
                 const docRef = doc(collection(db, 'interventions'));
-                const date = parseExcelDate(row.DATA);
+                const date = parseExcelDate(row.DATA, selectedYear);
                 const amount = parseAmount(row.IMPORTO);
 
                 batch.set(docRef, {
@@ -100,7 +113,7 @@ export const ExcelImport: React.FC = () => {
 
             await batch.commit();
 
-            let message = `Importazione completata!\n\n`;
+            let message = `Importazione completata per l'anno ${selectedYear}!\n\n`;
             message += `✅ Aggiunti: ${count}\n`;
             message += `💰 Totale Importato: €${totalAmount.toLocaleString('it-IT', { minimumFractionDigits: 2 })}\n`;
 
@@ -123,7 +136,18 @@ export const ExcelImport: React.FC = () => {
     };
 
     return (
-        <>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                className="input"
+                style={{ width: 'auto', padding: '0.5rem', margin: 0 }}
+            >
+                {[2023, 2024, 2025, 2026].map(year => (
+                    <option key={year} value={year}>{year}</option>
+                ))}
+            </select>
+
             <input
                 type="file"
                 accept=".xlsx, .xls, .xlsm"
@@ -149,6 +173,6 @@ export const ExcelImport: React.FC = () => {
                 {loading ? <Loader className="spin" size={18} /> : <FileSpreadsheet size={18} />}
                 <span className="hide-mobile">Importa Excel</span>
             </button>
-        </>
+        </div>
     );
 };

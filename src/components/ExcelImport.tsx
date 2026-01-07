@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { writeBatch, collection, doc, Timestamp } from 'firebase/firestore';
 import { db } from '../services/firebase';
-import { Upload, FileSpreadsheet, Loader } from 'lucide-react';
+import { FileSpreadsheet, Loader } from 'lucide-react';
 
 interface ExcelRow {
     DATA: number | string;

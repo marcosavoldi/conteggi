@@ -1,9 +1,9 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import {
-    ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area
+    ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { fetchWeatherData } from '../services/weather';
-import { CloudSun, Thermometer } from 'lucide-react';
+import { CloudSun } from 'lucide-react';
 
 interface Intervention {
     id: string;

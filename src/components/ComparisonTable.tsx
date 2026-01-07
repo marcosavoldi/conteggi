@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { Timestamp, doc, getDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { SeasonalityChart } from './SeasonalityChart';
 
 interface Intervention {
     id: string;
@@ -248,6 +249,15 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
                     </tbody>
                 </table>
             </div>
+
+            <SeasonalityChart
+                interventions={interventions}
+                period1Start={period1Start}
+                period1End={period1End}
+                period2Start={period2Start}
+                period2End={period2End}
+                selectedType={selectedType}
+            />
         </div>
     );
 };

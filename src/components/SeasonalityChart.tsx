@@ -1,9 +1,11 @@
+```typescript
 import React, { useMemo, useState, useEffect } from 'react';
 import {
     ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { fetchWeatherData } from '../services/weather';
 import { CloudSun } from 'lucide-react';
+import { DailyDetailModal } from './DailyDetailModal';
 
 interface Intervention {
     id: string;
@@ -34,6 +36,13 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
     const [showWeather, setShowWeather] = useState(false);
     const [loadingWeather, setLoadingWeather] = useState(false);
 
+    // Modal State
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalData, setModalData] = useState<any[]>([]);
+    const [modalMonth, setModalMonth] = useState('');
+    const [modalYear, setModalYear] = useState(0);
+    const [modalColor, setModalColor] = useState('');
+
     useEffect(() => {
         const loadWeather = async () => {
             setLoadingWeather(true);
@@ -55,13 +64,22 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
             monthIndex: index,
             p1Count: 0,
             p2Count: 0,
-            p1Temp: 0,
-            p2Temp: 0,
+            p1TempMax: 0,
+            p1TempMin: 0,
+            p2TempMax: 0,
+            p2TempMin: 0,
             p1Rain: 0,
             p2Rain: 0,
             p1Days: 0,
             p2Days: 0
         }));
+
+        // Helper to normalize type
+        const normalizeType = (str: string) => {
+            return str.toLowerCase().split(' ').map(word =>
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        };
 
         // Helper to process interventions
         const processInterventions = (startStr: string, endStr: string, key: 'p1Count' | 'p2Count') => {
@@ -71,13 +89,6 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
             interventions.forEach(i => {
                 const date = i.date.toDate();
                 const time = date.getTime();
-
-                // Helper to normalize type
-                const normalizeType = (str: string) => {
-                    return str.toLowerCase().split(' ').map(word =>
-                        word.charAt(0).toUpperCase() + word.slice(1)
-                    ).join(' ');
-                };
 
                 const type = normalizeType(i.type);
                 const targetType = selectedType === 'Tutti' ? 'Tutti' : normalizeType(selectedType);
@@ -95,36 +106,114 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
         processInterventions(period2Start, period2End, 'p2Count');
 
         // Helper to process weather
-        const processWeather = (weatherMap: any, keyTemp: 'p1Temp' | 'p2Temp', keyRain: 'p1Rain' | 'p2Rain', keyDays: 'p1Days' | 'p2Days') => {
+        const processWeather = (weatherMap: any, keyPrefix: 'p1' | 'p2') => {
             if (!weatherMap) return;
 
             Object.values(weatherMap).forEach((day: any) => {
                 const date = new Date(day.date);
                 const month = date.getMonth();
 
-                data[month][keyTemp] += day.temperature;
-                data[month][keyRain] += day.precipitation;
-                data[month][keyDays]++;
+                data[month][`${ keyPrefix } TempMax` as keyof typeof data[0]] += day.tempMax;
+                data[month][`${ keyPrefix } TempMin` as keyof typeof data[0]] += day.tempMin;
+                data[month][`${ keyPrefix } Rain` as keyof typeof data[0]] += day.precipitation;
+                data[month][`${ keyPrefix } Days` as keyof typeof data[0]]++;
             });
         };
 
-        processWeather(weatherData1, 'p1Temp', 'p1Rain', 'p1Days');
-        processWeather(weatherData2, 'p2Temp', 'p2Rain', 'p2Days');
+        processWeather(weatherData1, 'p1');
+        processWeather(weatherData2, 'p2');
 
         // Calculate averages
         data.forEach(d => {
             if (d.p1Days > 0) {
-                d.p1Temp = parseFloat((d.p1Temp / d.p1Days).toFixed(1));
+                d.p1TempMax = parseFloat((d.p1TempMax / d.p1Days).toFixed(1));
+                d.p1TempMin = parseFloat((d.p1TempMin / d.p1Days).toFixed(1));
                 d.p1Rain = parseFloat(d.p1Rain.toFixed(1));
             }
             if (d.p2Days > 0) {
-                d.p2Temp = parseFloat((d.p2Temp / d.p2Days).toFixed(1));
+                d.p2TempMax = parseFloat((d.p2TempMax / d.p2Days).toFixed(1));
+                d.p2TempMin = parseFloat((d.p2TempMin / d.p2Days).toFixed(1));
                 d.p2Rain = parseFloat(d.p2Rain.toFixed(1));
             }
         });
 
         return data;
     }, [interventions, period1Start, period1End, period2Start, period2End, selectedType, weatherData1, weatherData2]);
+
+    const handleChartClick = (data: any) => {
+        if (!data || !data.activePayload) return;
+
+        const monthIndex = data.activePayload[0].payload.monthIndex;
+        const monthName = data.activePayload[0].payload.name;
+
+        // Determine which line was clicked (or default to P1 if ambiguous)
+        // Recharts doesn't always give clear info on which line was clicked in composed chart,
+        // so we might need to ask user or show both. For now, let's try to infer or show P1 by default.
+        // Actually, let's show the period that has data or the most recent one.
+        // Better yet, let's show P2 (current year usually) if available, else P1.
+
+        // For simplicity, let's assume we want to see the "Period 2" details as it's usually the current year.
+        // Or we could check which data point is closer to the mouse, but that's complex.
+        // Let's default to Period 2 (Success Color) as it's the "comparison target".
+
+        // Wait, the user said "click on the graph". Let's show a modal that allows switching between P1 and P2?
+        // Or just show P2 by default. Let's start with P2 (Current).
+
+        const year = new Date(period2Start).getFullYear();
+        const weatherMap = weatherData2;
+        const color = 'var(--success)';
+        const periodStart = new Date(period2Start);
+        const periodEnd = new Date(period2End);
+
+        // Filter daily data for that month
+        const dailyData: any[] = [];
+
+        // Helper to normalize type
+        const normalizeType = (str: string) => {
+            return str.toLowerCase().split(' ').map(word =>
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        };
+
+        // 1. Get Interventions for that month/year
+        const monthInterventions: Record<number, number> = {};
+        interventions.forEach(i => {
+            const date = i.date.toDate();
+            const type = normalizeType(i.type);
+            const targetType = selectedType === 'Tutti' ? 'Tutti' : normalizeType(selectedType);
+
+            if (targetType !== 'Tutti' && type !== targetType) return;
+
+            if (date.getFullYear() === year && date.getMonth() === monthIndex) {
+                const day = date.getDate();
+                monthInterventions[day] = (monthInterventions[day] || 0) + 1;
+            }
+        });
+
+        // 2. Get Weather for that month/year
+        // We need to iterate through all days of the month
+        const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${ year } -${ String(monthIndex + 1).padStart(2, '0') } -${ String(d).padStart(2, '0') } `;
+            const weather = weatherMap ? weatherMap[dateStr] : null;
+
+            dailyData.push({
+                day: d,
+                date: dateStr,
+                count: monthInterventions[d] || 0,
+                tempMax: weather ? weather.tempMax : 0,
+                tempMin: weather ? weather.tempMin : 0,
+                rain: weather ? weather.precipitation : 0
+            });
+        }
+
+        setModalData(dailyData);
+        setModalMonth(monthName);
+        setModalYear(year);
+        setModalColor(color);
+        setModalOpen(true);
+    };
 
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
@@ -139,7 +228,8 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
                             <p>Interventi: <strong>{data.p1Count}</strong></p>
                             {data.p1Days > 0 && (
                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                                    <p>🌡️ {data.p1Temp}°C</p>
+                                    <p>🌡️ Max: {data.p1TempMax}°C</p>
+                                    <p>❄️ Min: {data.p1TempMin}°C</p>
                                     <p>🌧️ {data.p1Rain}mm</p>
                                 </div>
                             )}
@@ -149,12 +239,16 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
                             <p>Interventi: <strong>{data.p2Count}</strong></p>
                             {data.p2Days > 0 && (
                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                                    <p>🌡️ {data.p2Temp}°C</p>
+                                    <p>🌡️ Max: {data.p2TempMax}°C</p>
+                                    <p>❄️ Min: {data.p2TempMin}°C</p>
                                     <p>🌧️ {data.p2Rain}mm</p>
                                 </div>
                             )}
                         </div>
                     </div>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.5rem', fontStyle: 'italic' }}>
+                        Clicca per dettagli giornalieri (Periodo 2)
+                    </p>
                 </div>
             );
         }
@@ -183,7 +277,7 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
 
             <div style={{ height: '400px' }}>
                 <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={chartData}>
+                    <ComposedChart data={chartData} onClick={handleChartClick}>
                         <CartesianGrid strokeDasharray="3 3" opacity={0.5} />
                         <XAxis dataKey="name" />
                         <YAxis yAxisId="left" label={{ value: 'Interventi', angle: -90, position: 'insideLeft' }} />
@@ -197,16 +291,26 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
 
                         {showWeather && (
                             <>
-                                <Line yAxisId="right" type="monotone" dataKey="p1Temp" name="Temp P1" stroke="var(--primary)" strokeDasharray="5 5" strokeWidth={1} dot={false} />
-                                <Line yAxisId="right" type="monotone" dataKey="p2Temp" name="Temp P2" stroke="var(--success)" strokeDasharray="5 5" strokeWidth={1} dot={false} />
+                                <Line yAxisId="right" type="monotone" dataKey="p1TempMax" name="Max P1" stroke="var(--primary)" strokeDasharray="5 5" strokeWidth={1} dot={false} />
+                                <Line yAxisId="right" type="monotone" dataKey="p2TempMax" name="Max P2" stroke="var(--success)" strokeDasharray="5 5" strokeWidth={1} dot={false} />
                             </>
                         )}
                     </ComposedChart>
                 </ResponsiveContainer>
             </div>
             <p style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '1rem' }}>
-                Dati meteo storici per Bergamo (Open-Meteo API)
+                Dati meteo storici per Bergamo (Open-Meteo API). Clicca sul grafico per i dettagli giornalieri.
             </p>
+
+            <DailyDetailModal
+                isOpen={modalOpen}
+                onClose={() => setModalOpen(false)}
+                monthName={modalMonth}
+                year={modalYear}
+                data={modalData}
+                color={modalColor}
+            />
         </div>
     );
 };
+```

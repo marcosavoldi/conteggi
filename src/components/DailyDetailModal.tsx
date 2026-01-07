@@ -4,26 +4,35 @@ import {
 } from 'recharts';
 import { X } from 'lucide-react';
 
-interface DailyData {
+export interface DailyComparisonData {
     day: number;
-    date: string;
-    count: number;
-    tempMax: number;
-    tempMin: number;
-    rain: number;
+    p1: {
+        date: string;
+        count: number;
+        tempMax: number;
+        tempMin: number;
+        rain: number;
+    };
+    p2: {
+        date: string;
+        count: number;
+        tempMax: number;
+        tempMin: number;
+        rain: number;
+    };
 }
 
 interface DailyDetailModalProps {
     isOpen: boolean;
     onClose: () => void;
     monthName: string;
-    year: number;
-    data: DailyData[];
-    color: string;
+    year1: number;
+    year2: number;
+    data: DailyComparisonData[];
 }
 
 export const DailyDetailModal: React.FC<DailyDetailModalProps> = ({
-    isOpen, onClose, monthName, year, data, color
+    isOpen, onClose, monthName, year1, year2, data
 }) => {
     if (!isOpen) return null;
 
@@ -31,12 +40,31 @@ export const DailyDetailModal: React.FC<DailyDetailModalProps> = ({
         if (active && payload && payload.length) {
             const d = payload[0].payload;
             return (
-                <div style={{ background: 'var(--surface)', padding: '1rem', border: '1px solid var(--border)', borderRadius: '8px', zIndex: 100 }}>
-                    <p style={{ fontWeight: 'bold' }}>{d.date}</p>
-                    <p>Interventi: <strong>{d.count}</strong></p>
-                    <p style={{ color: '#ef4444' }}>Max: {d.tempMax}°C</p>
-                    <p style={{ color: '#3b82f6' }}>Min: {d.tempMin}°C</p>
-                    <p style={{ color: '#6b7280' }}>Pioggia: {d.rain}mm</p>
+                <div style={{ background: 'var(--surface)', padding: '1rem', border: '1px solid var(--border)', borderRadius: '8px', zIndex: 100, minWidth: '250px' }}>
+                    <p style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>Giorno {d.day}</p>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div>
+                            <p style={{ fontWeight: 600, color: 'var(--primary)', fontSize: '0.9rem' }}>{year1}</p>
+                            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{d.p1.date}</p>
+                            <div style={{ marginTop: '0.25rem' }}>
+                                <p>Interventi: <strong>{d.p1.count}</strong></p>
+                                <p style={{ color: '#ef4444' }}>Max: {d.p1.tempMax}°C</p>
+                                <p style={{ color: '#3b82f6' }}>Min: {d.p1.tempMin}°C</p>
+                                <p style={{ color: '#6b7280' }}>Pioggia: {d.p1.rain}mm</p>
+                            </div>
+                        </div>
+                        <div>
+                            <p style={{ fontWeight: 600, color: 'var(--success)', fontSize: '0.9rem' }}>{year2}</p>
+                            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{d.p2.date}</p>
+                            <div style={{ marginTop: '0.25rem' }}>
+                                <p>Interventi: <strong>{d.p2.count}</strong></p>
+                                <p style={{ color: '#ef4444' }}>Max: {d.p2.tempMax}°C</p>
+                                <p style={{ color: '#3b82f6' }}>Min: {d.p2.tempMin}°C</p>
+                                <p style={{ color: '#6b7280' }}>Pioggia: {d.p2.rain}mm</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             );
         }
@@ -72,7 +100,7 @@ export const DailyDetailModal: React.FC<DailyDetailModalProps> = ({
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                     <h2 style={{ fontSize: '1.25rem', margin: 0 }}>
-                        Dettaglio {monthName} {year}
+                        Dettaglio {monthName}: {year1} vs {year2}
                     </h2>
                     <button
                         onClick={onClose}
@@ -104,9 +132,14 @@ export const DailyDetailModal: React.FC<DailyDetailModalProps> = ({
                             <Tooltip content={<CustomTooltip />} />
                             <Legend verticalAlign="top" height={36} />
 
-                            <Bar yAxisId="left" dataKey="count" name="Interventi" fill={color} radius={[4, 4, 0, 0]} />
-                            <Line yAxisId="right" type="monotone" dataKey="tempMax" name="Max Temp" stroke="#ef4444" dot={false} strokeWidth={2} />
-                            <Line yAxisId="right" type="monotone" dataKey="tempMin" name="Min Temp" stroke="#3b82f6" dot={false} strokeWidth={2} />
+                            <Bar yAxisId="left" dataKey="p1.count" name={`Interventi ${year1}`} fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                            <Bar yAxisId="left" dataKey="p2.count" name={`Interventi ${year2}`} fill="var(--success)" radius={[4, 4, 0, 0]} />
+
+                            <Line yAxisId="right" type="monotone" dataKey="p1.tempMax" name={`Max ${year1}`} stroke="var(--primary)" strokeDasharray="5 5" dot={false} strokeWidth={2} />
+                            <Line yAxisId="right" type="monotone" dataKey="p1.tempMin" name={`Min ${year1}`} stroke="var(--primary)" strokeDasharray="3 3" dot={false} strokeWidth={2} opacity={0.7} />
+
+                            <Line yAxisId="right" type="monotone" dataKey="p2.tempMax" name={`Max ${year2}`} stroke="var(--success)" strokeDasharray="5 5" dot={false} strokeWidth={2} />
+                            <Line yAxisId="right" type="monotone" dataKey="p2.tempMin" name={`Min ${year2}`} stroke="var(--success)" strokeDasharray="3 3" dot={false} strokeWidth={2} opacity={0.7} />
                         </ComposedChart>
                     </ResponsiveContainer>
                 </div>

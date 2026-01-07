@@ -1,4 +1,3 @@
-```typescript
 import React, { useMemo, useState, useEffect } from 'react';
 import {
     ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -113,10 +112,10 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
                 const date = new Date(day.date);
                 const month = date.getMonth();
 
-                data[month][`${ keyPrefix } TempMax` as keyof typeof data[0]] += day.tempMax;
-                data[month][`${ keyPrefix } TempMin` as keyof typeof data[0]] += day.tempMin;
-                data[month][`${ keyPrefix } Rain` as keyof typeof data[0]] += day.precipitation;
-                data[month][`${ keyPrefix } Days` as keyof typeof data[0]]++;
+                data[month][`${keyPrefix}TempMax` as keyof typeof data[0]] += day.tempMax;
+                data[month][`${keyPrefix}TempMin` as keyof typeof data[0]] += day.tempMin;
+                data[month][`${keyPrefix}Rain` as keyof typeof data[0]] += day.precipitation;
+                data[month][`${keyPrefix}Days` as keyof typeof data[0]]++;
             });
         };
 
@@ -146,24 +145,9 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
         const monthIndex = data.activePayload[0].payload.monthIndex;
         const monthName = data.activePayload[0].payload.name;
 
-        // Determine which line was clicked (or default to P1 if ambiguous)
-        // Recharts doesn't always give clear info on which line was clicked in composed chart,
-        // so we might need to ask user or show both. For now, let's try to infer or show P1 by default.
-        // Actually, let's show the period that has data or the most recent one.
-        // Better yet, let's show P2 (current year usually) if available, else P1.
-
-        // For simplicity, let's assume we want to see the "Period 2" details as it's usually the current year.
-        // Or we could check which data point is closer to the mouse, but that's complex.
-        // Let's default to Period 2 (Success Color) as it's the "comparison target".
-
-        // Wait, the user said "click on the graph". Let's show a modal that allows switching between P1 and P2?
-        // Or just show P2 by default. Let's start with P2 (Current).
-
         const year = new Date(period2Start).getFullYear();
         const weatherMap = weatherData2;
         const color = 'var(--success)';
-        const periodStart = new Date(period2Start);
-        const periodEnd = new Date(period2End);
 
         // Filter daily data for that month
         const dailyData: any[] = [];
@@ -191,11 +175,10 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
         });
 
         // 2. Get Weather for that month/year
-        // We need to iterate through all days of the month
         const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
 
         for (let d = 1; d <= daysInMonth; d++) {
-            const dateStr = `${ year } -${ String(monthIndex + 1).padStart(2, '0') } -${ String(d).padStart(2, '0') } `;
+            const dateStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
             const weather = weatherMap ? weatherMap[dateStr] : null;
 
             dailyData.push({
@@ -313,4 +296,3 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
         </div>
     );
 };
-```

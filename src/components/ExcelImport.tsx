@@ -67,26 +67,49 @@ export const ExcelImport: React.FC = () => {
 
             const batch = writeBatch(db);
             let count = 0;
+            let skippedCount = 0;
+            let totalAmount = 0;
+            let skippedRows: number[] = [];
 
-            jsonData.forEach((row) => {
-                if (!row.CLIENTE || !row['TIPO INTERVENTO']) return; // Skip empty rows
+            jsonData.forEach((row, index) => {
+                // Adjust index for 1-based row number (Header is row 1, so data starts at row 2)
+                const rowNumber = index + 2;
+
+                if (!row.CLIENTE || !row['TIPO INTERVENTO']) {
+                    skippedCount++;
+                    skippedRows.push(rowNumber);
+                    console.warn(`Skipping row ${rowNumber}: Missing CLIENTE or TIPO INTERVENTO`, row);
+                    return;
+                }
 
                 const docRef = doc(collection(db, 'interventions'));
                 const date = parseExcelDate(row.DATA);
+                const amount = parseAmount(row.IMPORTO);
 
                 batch.set(docRef, {
                     clientName: row.CLIENTE,
                     type: row['TIPO INTERVENTO'],
-                    amount: parseAmount(row.IMPORTO),
+                    amount: amount,
                     date: Timestamp.fromDate(date),
                     notes: row.NOTE || '',
                     createdAt: Timestamp.now()
                 });
                 count++;
+                totalAmount += amount;
             });
 
             await batch.commit();
-            alert(`Importazione completata! ${count} interventi aggiunti.`);
+
+            let message = `Importazione completata!\n\n`;
+            message += `✅ Aggiunti: ${count}\n`;
+            message += `💰 Totale Importato: €${totalAmount.toLocaleString('it-IT', { minimumFractionDigits: 2 })}\n`;
+
+            if (skippedCount > 0) {
+                message += `⚠️ Saltati: ${skippedCount} (Righe: ${skippedRows.join(', ')})\n`;
+                message += `Controlla che queste righe abbiano 'CLIENTE' e 'TIPO INTERVENTO'.`;
+            }
+
+            alert(message);
 
             // Reset input
             if (fileInputRef.current) fileInputRef.current.value = '';

@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import {
     ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
-import { fetchWeatherData, WeatherData } from '../services/weather';
+import { fetchWeatherData, type WeatherData } from '../services/weather';
 import { CloudSun } from 'lucide-react';
 import { DailyDetailModal } from './DailyDetailModal';
 

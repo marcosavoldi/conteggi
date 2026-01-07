@@ -295,7 +295,9 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
                         {showWeather && (
                             <>
                                 <Line yAxisId="right" type="monotone" dataKey="p1TempMax" name="Max P1" stroke="var(--primary)" strokeDasharray="5 5" strokeWidth={1} dot={false} />
+                                <Line yAxisId="right" type="monotone" dataKey="p1TempMin" name="Min P1" stroke="var(--primary)" strokeDasharray="3 3" strokeWidth={1} dot={false} opacity={0.7} />
                                 <Line yAxisId="right" type="monotone" dataKey="p2TempMax" name="Max P2" stroke="var(--success)" strokeDasharray="5 5" strokeWidth={1} dot={false} />
+                                <Line yAxisId="right" type="monotone" dataKey="p2TempMin" name="Min P2" stroke="var(--success)" strokeDasharray="3 3" strokeWidth={1} dot={false} opacity={0.7} />
                             </>
                         )}
                     </ComposedChart>

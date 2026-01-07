@@ -43,8 +43,15 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
     }, []);
 
     const interventionTypes = useMemo(() => {
-        const existingTypes = new Set(interventions.map(i => i.type));
-        const allTypes = new Set([...Array.from(existingTypes), ...firestoreTypes]);
+        // Helper to normalize type
+        const normalizeType = (str: string) => {
+            return str.toLowerCase().split(' ').map(word =>
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        };
+
+        const existingTypes = new Set(interventions.map(i => normalizeType(i.type)));
+        const allTypes = new Set([...Array.from(existingTypes), ...firestoreTypes.map(t => normalizeType(t))]);
         return ['Tutti', ...Array.from(allTypes).sort()];
     }, [interventions, firestoreTypes]);
 

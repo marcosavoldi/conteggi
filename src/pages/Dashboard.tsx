@@ -17,8 +17,11 @@ interface Intervention {
     notes?: string;
 }
 
+import { useNavigate } from 'react-router-dom';
+
 export const Dashboard: React.FC = () => {
     const { user, signOut } = useAuth();
+    const navigate = useNavigate();
     const [interventions, setInterventions] = useState<Intervention[]>([]);
 
     useEffect(() => {
@@ -53,7 +56,7 @@ export const Dashboard: React.FC = () => {
                     <span className="hide-mobile">{user?.displayName}</span>
                     <button
                         className="btn"
-                        onClick={() => window.location.href = '/settings'}
+                        onClick={() => navigate('/settings')}
                         style={{ border: '1px solid var(--border)', padding: '0.5rem' }}
                         title="Impostazioni"
                     >

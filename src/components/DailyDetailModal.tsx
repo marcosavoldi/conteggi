@@ -55,38 +55,45 @@ export const DailyDetailModal: React.FC<DailyDetailModalProps> = ({
             justifyContent: 'center',
             alignItems: 'center',
             zIndex: 9999,
-            padding: '1rem'
+            padding: window.innerWidth < 768 ? 0 : '1rem'
         }}>
             <div style={{
                 background: 'var(--background)',
-                borderRadius: 'var(--radius)',
+                borderRadius: window.innerWidth < 768 ? 0 : 'var(--radius)',
                 width: '100%',
                 maxWidth: '900px',
-                maxHeight: '90vh',
+                height: window.innerWidth < 768 ? '100%' : 'auto',
+                maxHeight: window.innerWidth < 768 ? '100%' : '90vh',
                 overflow: 'auto',
                 padding: '1.5rem',
-                position: 'relative'
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column'
             }}>
-                <button
-                    onClick={onClose}
-                    style={{
-                        position: 'absolute',
-                        top: '1rem',
-                        right: '1rem',
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: 'var(--text)'
-                    }}
-                >
-                    <X size={24} />
-                </button>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <h2 style={{ fontSize: '1.25rem', margin: 0 }}>
+                        Dettaglio {monthName} {year}
+                    </h2>
+                    <button
+                        onClick={onClose}
+                        style={{
+                            background: 'var(--surface)',
+                            border: '1px solid var(--border)',
+                            borderRadius: '50%',
+                            width: '36px',
+                            height: '36px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            color: 'var(--text)'
+                        }}
+                    >
+                        <X size={20} />
+                    </button>
+                </div>
 
-                <h2 style={{ marginBottom: '1.5rem', fontSize: '1.5rem' }}>
-                    Dettaglio {monthName} {year}
-                </h2>
-
-                <div style={{ height: '400px' }}>
+                <div style={{ flex: 1, minHeight: '300px' }}>
                     <ResponsiveContainer width="100%" height="100%">
                         <ComposedChart data={data}>
                             <CartesianGrid strokeDasharray="3 3" opacity={0.5} />
@@ -95,7 +102,7 @@ export const DailyDetailModal: React.FC<DailyDetailModalProps> = ({
                             <YAxis yAxisId="right" orientation="right" label={{ value: 'Temp (°C)', angle: 90, position: 'insideRight' }} domain={['auto', 'auto']} />
 
                             <Tooltip content={<CustomTooltip />} />
-                            <Legend />
+                            <Legend verticalAlign="top" height={36} />
 
                             <Bar yAxisId="left" dataKey="count" name="Interventi" fill={color} radius={[4, 4, 0, 0]} />
                             <Line yAxisId="right" type="monotone" dataKey="tempMax" name="Max Temp" stroke="#ef4444" dot={false} strokeWidth={2} />

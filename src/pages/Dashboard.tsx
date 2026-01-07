@@ -115,7 +115,7 @@ export const Dashboard: React.FC = () => {
             <header style={{
                 background: 'var(--surface)',
                 borderBottom: '1px solid var(--border)',
-                padding: '1rem 2rem',
+                padding: '0.75rem 1rem', // Reduced padding for mobile
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
@@ -124,11 +124,11 @@ export const Dashboard: React.FC = () => {
                 zIndex: 10
             }}>
                 <h1 style={{ fontSize: '1.25rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    📊 Dashboard
+                    📊 <span className="hide-mobile">Dashboard</span>
                 </h1>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <ExcelImport />
-                    <span className="hide-mobile">{user?.displayName}</span>
+                    <span className="hide-mobile" style={{ fontSize: '0.9rem' }}>{user?.displayName}</span>
                     <button
                         className="btn"
                         onClick={() => navigate('/settings')}

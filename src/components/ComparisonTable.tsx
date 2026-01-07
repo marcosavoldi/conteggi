@@ -152,91 +152,98 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
             <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem' }}>⚖️ Confronto Avanzato</h3>
 
             {/* Filters */}
-            <div style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: '1fr', marginBottom: '2rem', background: 'var(--background)', padding: '1rem', borderRadius: 'var(--radius)' }}>
-                <div style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
-                    <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <label className="label" style={{ marginBottom: 0 }}>Periodo 1</label>
-                            <select
-                                className="input"
-                                style={{ padding: '0.25rem', fontSize: '0.8rem', width: 'auto' }}
-                                onChange={(e) => handleYearSelect(parseInt(e.target.value), 1)}
-                                defaultValue=""
-                            >
-                                <option value="" disabled>Anno...</option>
-                                {availableYears.map(year => (
-                                    <option key={`p1-${year}`} value={year}>{year}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                            <input
-                                type="date"
-                                className="input"
-                                style={{ flex: '1 1 130px' }}
-                                value={period1Start}
-                                onChange={(e) => setPeriod1Start(e.target.value)}
-                            />
-                            <input
-                                type="date"
-                                className="input"
-                                style={{ flex: '1 1 130px' }}
-                                value={period1End}
-                                onChange={(e) => setPeriod1End(e.target.value)}
-                            />
-                        </div>
-                    </div>
-
-                    <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <label className="label" style={{ marginBottom: 0 }}>Periodo 2</label>
-                            <select
-                                className="input"
-                                style={{ padding: '0.25rem', fontSize: '0.8rem', width: 'auto' }}
-                                onChange={(e) => handleYearSelect(parseInt(e.target.value), 2)}
-                                defaultValue=""
-                            >
-                                <option value="" disabled>Anno...</option>
-                                {availableYears.map(year => (
-                                    <option key={`p2-${year}`} value={year}>{year}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                            <input
-                                type="date"
-                                className="input"
-                                style={{ flex: '1 1 130px' }}
-                                value={period2Start}
-                                onChange={(e) => setPeriod2Start(e.target.value)}
-                            />
-                            <input
-                                type="date"
-                                className="input"
-                                style={{ flex: '1 1 130px' }}
-                                value={period2End}
-                                onChange={(e) => setPeriod2End(e.target.value)}
-                            />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="label">Tipologia</label>
+            <div style={{
+                display: 'grid',
+                gap: '1.5rem',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                marginBottom: '2rem',
+                background: 'var(--background)',
+                padding: '1.5rem',
+                borderRadius: 'var(--radius)'
+            }}>
+                <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <label className="label" style={{ marginBottom: 0 }}>Periodo 1</label>
                         <select
                             className="input"
-                            value={selectedType}
-                            onChange={(e) => setSelectedType(e.target.value)}
-                            disabled={interventionTypes.length <= 1}
+                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.85rem', width: 'auto', height: 'auto' }}
+                            onChange={(e) => handleYearSelect(parseInt(e.target.value), 1)}
+                            defaultValue=""
                         >
-                            {interventionTypes.length <= 1 ? (
-                                <option value="Tutti">Nessun dato disponibile</option>
-                            ) : (
-                                interventionTypes.map(type => (
-                                    <option key={type} value={type}>{type}</option>
-                                ))
-                            )}
+                            <option value="" disabled>Anno...</option>
+                            {availableYears.map(year => (
+                                <option key={`p1-${year}`} value={year}>{year}</option>
+                            ))}
                         </select>
                     </div>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <input
+                            type="date"
+                            className="input"
+                            style={{ flex: 1, minWidth: 0 }} // minWidth 0 prevents flex item from overflowing
+                            value={period1Start}
+                            onChange={(e) => setPeriod1Start(e.target.value)}
+                        />
+                        <input
+                            type="date"
+                            className="input"
+                            style={{ flex: 1, minWidth: 0 }}
+                            value={period1End}
+                            onChange={(e) => setPeriod1End(e.target.value)}
+                        />
+                    </div>
+                </div>
+
+                <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <label className="label" style={{ marginBottom: 0 }}>Periodo 2</label>
+                        <select
+                            className="input"
+                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.85rem', width: 'auto', height: 'auto' }}
+                            onChange={(e) => handleYearSelect(parseInt(e.target.value), 2)}
+                            defaultValue=""
+                        >
+                            <option value="" disabled>Anno...</option>
+                            {availableYears.map(year => (
+                                <option key={`p2-${year}`} value={year}>{year}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <input
+                            type="date"
+                            className="input"
+                            style={{ flex: 1, minWidth: 0 }}
+                            value={period2Start}
+                            onChange={(e) => setPeriod2Start(e.target.value)}
+                        />
+                        <input
+                            type="date"
+                            className="input"
+                            style={{ flex: 1, minWidth: 0 }}
+                            value={period2End}
+                            onChange={(e) => setPeriod2End(e.target.value)}
+                        />
+                    </div>
+                </div>
+
+                <div>
+                    <label className="label">Tipologia</label>
+                    <select
+                        className="input"
+                        value={selectedType}
+                        onChange={(e) => setSelectedType(e.target.value)}
+                        disabled={interventionTypes.length <= 1}
+                        style={{ width: '100%' }}
+                    >
+                        {interventionTypes.length <= 1 ? (
+                            <option value="Tutti">Nessun dato disponibile</option>
+                        ) : (
+                            interventionTypes.map(type => (
+                                <option key={type} value={type}>{type}</option>
+                            ))
+                        )}
+                    </select>
                 </div>
             </div>
 

@@ -94,6 +94,18 @@ export const ExcelImport: React.FC = () => {
 
                 const date = parseExcelDate(row.DATA, selectedYear);
 
+                // Check for summary rows
+                const client = row.CLIENTE?.toString().toLowerCase() || '';
+                const type = row['TIPO INTERVENTO']?.toString().toLowerCase() || '';
+
+                if (client.includes('totale') || client.includes('riporto') ||
+                    type.includes('totale') || type.includes('riporto')) {
+                    skippedCount++;
+                    skippedRows.push(rowNumber);
+                    console.warn(`Skipping row ${rowNumber}: Detected summary row`, row);
+                    return;
+                }
+
                 if (!row.CLIENTE || !row['TIPO INTERVENTO'] || !date) {
                     skippedCount++;
                     skippedRows.push(rowNumber);
@@ -103,6 +115,9 @@ export const ExcelImport: React.FC = () => {
 
                 const docRef = doc(collection(db, 'interventions'));
                 const amount = parseAmount(row.IMPORTO);
+
+                // Debug log
+                console.log(`Row ${rowNumber}: ${row.CLIENTE} - ${amount}`);
 
                 batch.set(docRef, {
                     clientName: row.CLIENTE,

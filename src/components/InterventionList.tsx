@@ -1,4 +1,4 @@
-```typescript
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc, Timestamp, getDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
@@ -77,7 +77,7 @@ export const InterventionList: React.FC = () => {
         return interventions.filter(intervention => {
             const matchesSearch = intervention.clientName.toLowerCase().includes(searchTerm.toLowerCase());
             const matchesType = selectedType === 'Tutti' || intervention.type === selectedType;
-            
+
             let matchesDate = true;
             if (startDate || endDate) {
                 const date = intervention.date.toDate();
@@ -125,10 +125,10 @@ export const InterventionList: React.FC = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    
+
                     <div style={{ position: 'relative' }}>
                         <Filter size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                        <select 
+                        <select
                             className="input"
                             style={{ paddingLeft: '2.5rem', width: '180px' }}
                             value={selectedType}

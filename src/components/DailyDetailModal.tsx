@@ -27,7 +27,7 @@ export const DailyDetailModal: React.FC<DailyDetailModalProps> = ({
 }) => {
     if (!isOpen) return null;
 
-    const CustomTooltip = ({ active, payload, label }: any) => {
+    const CustomTooltip = ({ active, payload }: any) => {
         if (active && payload && payload.length) {
             const d = payload[0].payload;
             return (

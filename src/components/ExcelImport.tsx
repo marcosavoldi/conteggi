@@ -21,8 +21,8 @@ export const ExcelImport: React.FC = () => {
         fileInputRef.current?.click();
     };
 
-    const parseExcelDate = (excelDate: number | string, targetYear: number): Date => {
-        let date = new Date();
+    const parseExcelDate = (excelDate: number | string, targetYear: number): Date | null => {
+        let date: Date | null = null;
 
         if (typeof excelDate === 'number') {
             // Excel date serial number
@@ -37,9 +37,13 @@ export const ExcelImport: React.FC = () => {
             }
         }
 
+        if (!date || isNaN(date.getTime())) {
+            return null;
+        }
+
         // Auto-correct year if it doesn't match the selected target year
         if (date.getFullYear() !== targetYear) {
-            console.warn(`Correcting date ${date.toLocaleDateString()} to year ${targetYear}`);
+            // console.warn(`Correcting date ${date.toLocaleDateString()} to year ${targetYear}`);
             date.setFullYear(targetYear);
         }
 
@@ -88,15 +92,16 @@ export const ExcelImport: React.FC = () => {
                 // Adjust index for 1-based row number (Header is row 1, so data starts at row 2)
                 const rowNumber = index + 2;
 
-                if (!row.CLIENTE || !row['TIPO INTERVENTO']) {
+                const date = parseExcelDate(row.DATA, selectedYear);
+
+                if (!row.CLIENTE || !row['TIPO INTERVENTO'] || !date) {
                     skippedCount++;
                     skippedRows.push(rowNumber);
-                    console.warn(`Skipping row ${rowNumber}: Missing CLIENTE or TIPO INTERVENTO`, row);
+                    console.warn(`Skipping row ${rowNumber}: Missing CLIENTE, TIPO INTERVENTO, or Invalid DATE`, row);
                     return;
                 }
 
                 const docRef = doc(collection(db, 'interventions'));
-                const date = parseExcelDate(row.DATA, selectedYear);
                 const amount = parseAmount(row.IMPORTO);
 
                 batch.set(docRef, {

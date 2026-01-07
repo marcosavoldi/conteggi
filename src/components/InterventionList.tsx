@@ -1,7 +1,8 @@
+```typescript
 import React, { useEffect, useState, useMemo } from 'react';
-import { collection, query, orderBy, onSnapshot, deleteDoc, doc, Timestamp } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, deleteDoc, doc, Timestamp, getDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
-import { Trash2, Search, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Trash2, Search, Calendar, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 
 interface Intervention {
     id: string;
@@ -14,12 +15,14 @@ interface Intervention {
 
 export const InterventionList: React.FC = () => {
     const [interventions, setInterventions] = useState<Intervention[]>([]);
+    const [interventionTypes, setInterventionTypes] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Filter States
     const [searchTerm, setSearchTerm] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [selectedType, setSelectedType] = useState('Tutti');
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
@@ -41,6 +44,20 @@ export const InterventionList: React.FC = () => {
             setLoading(false);
         });
 
+        // Fetch types
+        const fetchTypes = async () => {
+            try {
+                const docRef = doc(db, 'settings', 'general');
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    setInterventionTypes(docSnap.data().interventionTypes || []);
+                }
+            } catch (error) {
+                console.error("Error fetching types:", error);
+            }
+        };
+        fetchTypes();
+
         return () => unsubscribe();
     }, []);
 
@@ -59,7 +76,8 @@ export const InterventionList: React.FC = () => {
     const filteredInterventions = useMemo(() => {
         return interventions.filter(intervention => {
             const matchesSearch = intervention.clientName.toLowerCase().includes(searchTerm.toLowerCase());
-
+            const matchesType = selectedType === 'Tutti' || intervention.type === selectedType;
+            
             let matchesDate = true;
             if (startDate || endDate) {
                 const date = intervention.date.toDate();
@@ -69,9 +87,9 @@ export const InterventionList: React.FC = () => {
                 matchesDate = date >= start && date <= end;
             }
 
-            return matchesSearch && matchesDate;
+            return matchesSearch && matchesType && matchesDate;
         });
-    }, [interventions, searchTerm, startDate, endDate]);
+    }, [interventions, searchTerm, selectedType, startDate, endDate]);
 
     // Pagination Logic
     const totalPages = Math.ceil(filteredInterventions.length / itemsPerPage);
@@ -83,7 +101,7 @@ export const InterventionList: React.FC = () => {
     // Reset page when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, startDate, endDate]);
+    }, [searchTerm, selectedType, startDate, endDate]);
 
     if (loading) {
         return <div className="card">Caricamento interventi...</div>;
@@ -107,6 +125,22 @@ export const InterventionList: React.FC = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
+                    
+                    <div style={{ position: 'relative' }}>
+                        <Filter size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                        <select 
+                            className="input"
+                            style={{ paddingLeft: '2.5rem', width: '180px' }}
+                            value={selectedType}
+                            onChange={(e) => setSelectedType(e.target.value)}
+                        >
+                            <option value="Tutti">Tutti i servizi</option>
+                            {interventionTypes.map(type => (
+                                <option key={type} value={type}>{type}</option>
+                            ))}
+                        </select>
+                    </div>
+
                     <div style={{ position: 'relative' }}>
                         <Calendar size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
                         <input

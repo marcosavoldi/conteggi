@@ -73,14 +73,17 @@ export const Dashboard: React.FC = () => {
             const end = new Date(endDate);
             end.setHours(23, 59, 59, 999); // Include the entire end day
 
-            const matchesType = selectedType === 'Tutti' || intervention.type === selectedType;
+            const normalizedSelectedType = selectedType.trim().toLowerCase();
+            const normalizedInterventionType = intervention.type.trim().toLowerCase();
+
+            const matchesType = selectedType === 'Tutti' || normalizedInterventionType === normalizedSelectedType;
             const matchesDate = date >= start && date <= end;
 
             return matchesType && matchesDate;
         });
     }, [interventions, selectedType, startDate, endDate]);
 
-    // Summary Statistics (Global, not filtered by the chart filters, but specifically for Year and Month as requested)
+    // Summary Statistics (Global)
     const summaryStats = useMemo(() => {
         const now = new Date();
         const currentYear = now.getFullYear();
@@ -101,6 +104,11 @@ export const Dashboard: React.FC = () => {
 
         return { yearTotal, monthTotal };
     }, [interventions]);
+
+    // Filtered Summary
+    const filteredTotal = useMemo(() => {
+        return filteredInterventions.reduce((sum, i) => sum + i.amount, 0);
+    }, [filteredInterventions]);
 
     return (
         <div>
@@ -147,6 +155,10 @@ export const Dashboard: React.FC = () => {
                     <div className="card" style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white' }}>
                         <h3 style={{ fontSize: '0.875rem', opacity: 0.9, marginBottom: '0.5rem' }}>Incasso Mese Corrente</h3>
                         <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>€{summaryStats.monthTotal.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
+                    </div>
+                    <div className="card" style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: 'white' }}>
+                        <h3 style={{ fontSize: '0.875rem', opacity: 0.9, marginBottom: '0.5rem' }}>Incasso Periodo Selezionato</h3>
+                        <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>€{filteredTotal.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
                     </div>
                 </div>
 

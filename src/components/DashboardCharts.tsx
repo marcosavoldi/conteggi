@@ -37,7 +37,7 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ interventions 
     return (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
             <div className="card">
-                <h3 style={{ marginBottom: '1rem' }}>💰 Fatturato Mensile</h3>
+                <h3 style={{ marginBottom: '1rem' }}>💰 Incassato Mensile</h3>
                 <div style={{ height: '300px' }}>
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={data}>
@@ -46,7 +46,7 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ interventions 
                             <YAxis />
                             <Tooltip formatter={(value) => `€${Number(value).toFixed(2)}`} />
                             <Legend />
-                            <Bar dataKey="amount" fill="var(--primary)" name="Fatturato (€)" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="amount" fill="var(--primary)" name="Incassato (€)" radius={[4, 4, 0, 0]} />
                         </BarChart>
                     </ResponsiveContainer>
                 </div>

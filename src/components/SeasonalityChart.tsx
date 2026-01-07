@@ -181,8 +181,13 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
         if (monthIndex === -1) return;
 
         // Determine years
-        const year1 = new Date(period1Start).getFullYear();
-        const year2 = new Date(period2Start).getFullYear();
+        const d1 = new Date(period1Start);
+        const d2 = new Date(period2Start);
+
+        if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return;
+
+        const year1 = d1.getFullYear();
+        const year2 = d2.getFullYear();
 
         // Filter daily data for that month
         const dailyData: DailyComparisonData[] = [];

@@ -4,7 +4,7 @@ import {
 } from 'recharts';
 import { fetchWeatherData, type WeatherData } from '../services/weather';
 import { CloudSun } from 'lucide-react';
-import { DailyDetailModal, DailyComparisonData } from './DailyDetailModal';
+import { DailyDetailModal, type DailyComparisonData } from './DailyDetailModal';
 
 interface Intervention {
     id: string;

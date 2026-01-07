@@ -116,12 +116,21 @@ export const ExcelImport: React.FC = () => {
                 const docRef = doc(collection(db, 'interventions'));
                 const amount = parseAmount(row.IMPORTO);
 
+                // Normalize type to Title Case (e.g., "VESPE" -> "Vespe")
+                const normalizeType = (str: string) => {
+                    return str.toLowerCase().split(' ').map(word =>
+                        word.charAt(0).toUpperCase() + word.slice(1)
+                    ).join(' ');
+                };
+
+                const normalizedType = normalizeType(row['TIPO INTERVENTO'].toString());
+
                 // Debug log
                 console.log(`Row ${rowNumber}: ${row.CLIENTE} - ${amount}`);
 
                 batch.set(docRef, {
                     clientName: row.CLIENTE,
-                    type: row['TIPO INTERVENTO'],
+                    type: normalizedType,
                     amount: amount,
                     date: Timestamp.fromDate(date),
                     notes: row.NOTE || '',

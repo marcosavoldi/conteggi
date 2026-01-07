@@ -56,10 +56,17 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
 
         const data: Record<string, { type: string; p1Amount: number; p2Amount: number; p1Count: number; p2Count: number }> = {};
 
+        // Helper to normalize type
+        const normalizeType = (str: string) => {
+            return str.toLowerCase().split(' ').map(word =>
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        };
+
         // Initialize data for all types found in the filtered range or all types if "Tutti"
         const relevantTypes = selectedType === 'Tutti'
-            ? Array.from(new Set(interventions.map(i => i.type)))
-            : [selectedType];
+            ? Array.from(new Set(interventions.map(i => normalizeType(i.type))))
+            : [normalizeType(selectedType)];
 
         relevantTypes.forEach(type => {
             data[type] = { type, p1Amount: 0, p2Amount: 0, p1Count: 0, p2Count: 0 };
@@ -67,10 +74,13 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
 
         interventions.forEach(intervention => {
             const date = intervention.date.toDate().getTime();
-            const type = intervention.type;
+            const type = normalizeType(intervention.type);
 
-            if (selectedType !== 'Tutti' && type !== selectedType) return;
-            if (!data[type]) return; // Should be initialized, but safety check
+            if (selectedType !== 'Tutti' && type !== normalizeType(selectedType)) return;
+            if (!data[type]) {
+                // Initialize if not present (e.g. if it wasn't in the initial set but appeared later)
+                data[type] = { type, p1Amount: 0, p2Amount: 0, p1Count: 0, p2Count: 0 };
+            }
 
             if (date >= p1Start && date <= p1End) {
                 data[type].p1Amount += intervention.amount;

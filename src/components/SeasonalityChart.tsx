@@ -72,7 +72,17 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
                 const date = i.date.toDate();
                 const time = date.getTime();
 
-                if (selectedType !== 'Tutti' && i.type !== selectedType) return;
+                // Helper to normalize type
+                const normalizeType = (str: string) => {
+                    return str.toLowerCase().split(' ').map(word =>
+                        word.charAt(0).toUpperCase() + word.slice(1)
+                    ).join(' ');
+                };
+
+                const type = normalizeType(i.type);
+                const targetType = selectedType === 'Tutti' ? 'Tutti' : normalizeType(selectedType);
+
+                if (targetType !== 'Tutti' && type !== targetType) return;
 
                 if (time >= start && time <= end) {
                     const month = date.getMonth();

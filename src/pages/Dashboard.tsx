@@ -18,6 +18,8 @@ interface Intervention {
     notes?: string;
 }
 
+import { ExcelImport } from '../components/ExcelImport';
+
 export const Dashboard: React.FC = () => {
     const { user, signOut } = useAuth();
     const navigate = useNavigate();
@@ -117,6 +119,7 @@ export const Dashboard: React.FC = () => {
                     📊 Dashboard
                 </h1>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <ExcelImport />
                     <span className="hide-mobile">{user?.displayName}</span>
                     <button
                         className="btn"

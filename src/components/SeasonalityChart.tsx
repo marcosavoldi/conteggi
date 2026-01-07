@@ -164,10 +164,20 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
 
         const monthIndex = data.activePayload[0].payload.monthIndex;
         const monthName = data.activePayload[0].payload.name;
+        const p1Count = data.activePayload[0].payload.p1Count;
+        const p2Count = data.activePayload[0].payload.p2Count;
 
-        const year = new Date(period2Start).getFullYear();
-        const weatherMap = weatherData2;
-        const color = 'var(--success)';
+        // Determine which year to show
+        // Default to Period 2 (Current), but if P2 is empty and P1 has data, show P1
+        let year = new Date(period2Start).getFullYear();
+        let weatherMap = weatherData2;
+        let color = 'var(--success)';
+
+        if (p2Count === 0 && p1Count > 0) {
+            year = new Date(period1Start).getFullYear();
+            weatherMap = weatherData1;
+            color = 'var(--primary)';
+        }
 
         // Filter daily data for that month
         const dailyData: any[] = [];
@@ -278,7 +288,7 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
                 </button>
             </div>
 
-            <div style={{ height: '400px' }}>
+            <div style={{ height: '400px', cursor: 'pointer' }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={chartData} onClick={handleChartClick}>
                         <CartesianGrid strokeDasharray="3 3" opacity={0.5} />

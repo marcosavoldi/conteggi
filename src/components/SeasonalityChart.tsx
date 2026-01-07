@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import {
     ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
-import { fetchWeatherData } from '../services/weather';
+import { fetchWeatherData, WeatherData } from '../services/weather';
 import { CloudSun } from 'lucide-react';
 import { DailyDetailModal } from './DailyDetailModal';
 
@@ -22,6 +22,21 @@ interface SeasonalityChartProps {
     selectedType: string;
 }
 
+interface ChartData {
+    name: string;
+    monthIndex: number;
+    p1Count: number;
+    p2Count: number;
+    p1TempMax: number;
+    p1TempMin: number;
+    p2TempMax: number;
+    p2TempMin: number;
+    p1Rain: number;
+    p2Rain: number;
+    p1Days: number;
+    p2Days: number;
+}
+
 export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
     interventions,
     period1Start,
@@ -30,8 +45,8 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
     period2End,
     selectedType
 }) => {
-    const [weatherData1, setWeatherData1] = useState<any>(null);
-    const [weatherData2, setWeatherData2] = useState<any>(null);
+    const [weatherData1, setWeatherData1] = useState<Record<string, WeatherData> | null>(null);
+    const [weatherData2, setWeatherData2] = useState<Record<string, WeatherData> | null>(null);
     const [showWeather, setShowWeather] = useState(false);
     const [loadingWeather, setLoadingWeather] = useState(false);
 
@@ -58,7 +73,7 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
         const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
 
         // Initialize structure
-        const data = months.map((name, index) => ({
+        const data: ChartData[] = months.map((name, index) => ({
             name,
             monthIndex: index,
             p1Count: 0,
@@ -105,17 +120,22 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
         processInterventions(period2Start, period2End, 'p2Count');
 
         // Helper to process weather
-        const processWeather = (weatherMap: any, keyPrefix: 'p1' | 'p2') => {
+        const processWeather = (weatherMap: Record<string, WeatherData> | null, keyPrefix: 'p1' | 'p2') => {
             if (!weatherMap) return;
 
-            Object.values(weatherMap).forEach((day: any) => {
+            Object.values(weatherMap).forEach((day) => {
                 const date = new Date(day.date);
                 const month = date.getMonth();
 
-                data[month][`${keyPrefix}TempMax` as keyof typeof data[0]] += day.tempMax;
-                data[month][`${keyPrefix}TempMin` as keyof typeof data[0]] += day.tempMin;
-                data[month][`${keyPrefix}Rain` as keyof typeof data[0]] += day.precipitation;
-                data[month][`${keyPrefix}Days` as keyof typeof data[0]]++;
+                const tempMaxKey = `${keyPrefix}TempMax` as keyof ChartData;
+                const tempMinKey = `${keyPrefix}TempMin` as keyof ChartData;
+                const rainKey = `${keyPrefix}Rain` as keyof ChartData;
+                const daysKey = `${keyPrefix}Days` as keyof ChartData;
+
+                (data[month] as any)[tempMaxKey] += day.tempMax;
+                (data[month] as any)[tempMinKey] += day.tempMin;
+                (data[month] as any)[rainKey] += day.precipitation;
+                (data[month] as any)[daysKey]++;
             });
         };
 

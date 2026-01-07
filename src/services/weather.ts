@@ -1,4 +1,4 @@
-interface WeatherData {
+export interface WeatherData {
     date: string;
     tempMax: number;
     tempMin: number;

@@ -160,16 +160,31 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
     }, [interventions, period1Start, period1End, period2Start, period2End, selectedType, weatherData1, weatherData2]);
 
     const handleChartClick = (data: any) => {
-        console.log("Chart Clicked:", data);
-        if (!data || !data.activePayload) {
-            console.log("No active payload");
-            return;
+        let monthIndex = -1;
+        let monthName = '';
+        let p1Count = 0;
+        let p2Count = 0;
+
+        if (data && data.activePayload && data.activePayload.length > 0) {
+            monthIndex = data.activePayload[0].payload.monthIndex;
+            monthName = data.activePayload[0].payload.name;
+            p1Count = data.activePayload[0].payload.p1Count;
+            p2Count = data.activePayload[0].payload.p2Count;
+        } else if (data && data.activeLabel) {
+            // Fallback to activeLabel
+            monthName = data.activeLabel;
+            const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+            monthIndex = months.indexOf(monthName);
+
+            // Find data item to get counts
+            const dataItem = chartData.find(d => d.name === monthName);
+            if (dataItem) {
+                p1Count = dataItem.p1Count;
+                p2Count = dataItem.p2Count;
+            }
         }
 
-        const monthIndex = data.activePayload[0].payload.monthIndex;
-        const monthName = data.activePayload[0].payload.name;
-        const p1Count = data.activePayload[0].payload.p1Count;
-        const p2Count = data.activePayload[0].payload.p2Count;
+        if (monthIndex === -1) return;
 
         // Determine which year to show
         // Default to Period 2 (Current), but if P2 is empty and P1 has data, show P1

@@ -1,8 +1,11 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Timestamp, doc, getDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { SeasonalityChart } from './SeasonalityChart';
+import { Download } from 'lucide-react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface Intervention {
     id: string;
@@ -16,6 +19,7 @@ interface ComparisonTableProps {
 }
 
 export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions }) => {
+    const componentRef = useRef<HTMLDivElement>(null);
     // Default to empty to wait for user input
     const [period1Start, setPeriod1Start] = useState('');
     const [period1End, setPeriod1End] = useState('');
@@ -24,6 +28,34 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
     const [selectedType, setSelectedType] = useState('Tutti');
 
     const [firestoreTypes, setFirestoreTypes] = useState<string[]>([]);
+
+    const handleDownloadPDF = async () => {
+        if (!componentRef.current) return;
+
+        try {
+            const canvas = await html2canvas(componentRef.current, {
+                scale: 2, // Higher scale for better quality
+                useCORS: true,
+                logging: false
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF({
+                orientation: 'landscape',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            const imgWidth = 297; // A4 Landscape width in mm
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+            pdf.save('confronto-report.pdf');
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+            alert("Errore durante la generazione del PDF");
+        }
+    };
 
     // Helper for quick year selection
     const handleYearSelect = (year: number, period: 1 | 2) => {
@@ -148,8 +180,26 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
     ];
 
     return (
-        <div className="card" style={{ marginBottom: '2rem' }}>
-            <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem' }}>⚖️ Confronto Avanzato</h3>
+        <div className="card" style={{ marginBottom: '2rem' }} ref={componentRef}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h3 style={{ fontSize: '1.25rem' }}>⚖️ Confronto Avanzato</h3>
+                <button
+                    onClick={handleDownloadPDF}
+                    className="btn"
+                    style={{
+                        background: 'var(--primary)',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.5rem 1rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                    }}
+                >
+                    <Download size={18} />
+                    <span className="hide-mobile">Scarica PDF</span>
+                </button>
+            </div>
 
             {/* Filters */}
             <div style={{

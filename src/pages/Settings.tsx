@@ -4,7 +4,11 @@ import { db } from '../services/firebase';
 import { ArrowLeft, Plus, Trash2, Settings as SettingsIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+import { useAuth } from '../context/AuthContext';
+import { Database } from 'lucide-react';
+
 export const Settings: React.FC = () => {
+    const { user } = useAuth();
     const navigate = useNavigate();
     const [types, setTypes] = useState<string[]>([]);
     const [newType, setNewType] = useState('');
@@ -73,6 +77,43 @@ export const Settings: React.FC = () => {
         } catch (error) {
             console.error("Error deleting type:", error);
             alert("Errore durante l'eliminazione della tipologia");
+        }
+    };
+
+    const handleClaimData = async () => {
+        if (!user) return;
+        if (!window.confirm("Vuoi recuperare tutti i dati esistenti e assegnarli al tuo utente?")) return;
+
+        setLoading(true);
+        try {
+            // Fetch ALL interventions (this might be heavy if lots of data, but ok for now)
+            const q = query(collection(db, 'interventions'));
+            const snapshot = await getDocs(q);
+
+            const batch = writeBatch(db);
+            let count = 0;
+
+            snapshot.docs.forEach((doc) => {
+                const data = doc.data();
+                // If userId is missing or different (though we probably only want missing ones)
+                if (!data.userId) {
+                    batch.update(doc.ref, { userId: user.uid });
+                    count++;
+                }
+            });
+
+            if (count > 0) {
+                await batch.commit();
+                alert(`Hai recuperato con successo ${count} interventi!`);
+            } else {
+                alert("Non ci sono interventi da recuperare (hanno già tutti un proprietario).");
+            }
+
+        } catch (error: any) {
+            console.error("Error claiming data:", error);
+            alert(`Errore durante il recupero: ${error.message}`);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -165,6 +206,27 @@ export const Settings: React.FC = () => {
                         </li>
                     )}
                 </ul>
+            </div>
+
+            <div className="card" style={{ maxWidth: '600px', margin: '0 auto', marginBottom: '2rem', border: '1px solid var(--primary)' }}>
+                <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Database size={20} /> Recupero Dati
+                </h2>
+                <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>
+                    Se non vedi i tuoi vecchi dati, usa questo pulsante per assegnare tutti gli interventi esistenti (senza proprietario) al tuo utente attuale.
+                </p>
+                <button
+                    onClick={handleClaimData}
+                    className="btn"
+                    style={{
+                        background: 'var(--primary)',
+                        color: 'white',
+                        width: '100%',
+                        justifyContent: 'center'
+                    }}
+                >
+                    Recupera Vecchi Dati
+                </button>
             </div>
 
             <div className="card" style={{ maxWidth: '600px', margin: '0 auto', border: '1px solid var(--danger)', background: '#fff1f2' }}>

@@ -5,7 +5,7 @@ import { InterventionForm } from '../components/InterventionForm';
 import { InterventionList } from '../components/InterventionList';
 import { DashboardCharts } from '../components/DashboardCharts';
 import { ComparisonTable } from '../components/ComparisonTable';
-import { collection, query, onSnapshot, orderBy, Timestamp, doc, getDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, Timestamp, doc, getDoc, where } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useNavigate } from 'react-router-dom';
 
@@ -39,7 +39,14 @@ export const Dashboard: React.FC = () => {
     });
 
     useEffect(() => {
-        const q = query(collection(db, 'interventions'), orderBy('date', 'desc'));
+        if (!user) return;
+
+        const q = query(
+            collection(db, 'interventions'),
+            where('userId', '==', user.uid),
+            orderBy('date', 'desc')
+        );
+
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map(doc => ({
                 id: doc.id,

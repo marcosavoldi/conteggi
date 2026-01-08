@@ -12,7 +12,10 @@ interface ExcelRow {
     NOTE?: string;
 }
 
+import { useAuth } from '../context/AuthContext';
+
 export const ExcelImport: React.FC = () => {
+    const { user } = useAuth();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [loading, setLoading] = useState(false);
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
@@ -63,6 +66,11 @@ export const ExcelImport: React.FC = () => {
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        if (!user) {
+            alert('Devi essere loggato per importare dati.');
+            return;
+        }
 
         if (!window.confirm(`Stai per importare i dati forzando l'anno al ${selectedYear}. Confermi?`)) {
             if (fileInputRef.current) fileInputRef.current.value = '';
@@ -129,6 +137,7 @@ export const ExcelImport: React.FC = () => {
                 console.log(`Row ${rowNumber}: ${row.CLIENTE} - ${amount}`);
 
                 batch.set(docRef, {
+                    userId: user.uid,
                     clientName: row.CLIENTE,
                     type: normalizedType,
                     amount: amount,

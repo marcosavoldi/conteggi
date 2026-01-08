@@ -1,8 +1,9 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { collection, query, orderBy, onSnapshot, deleteDoc, doc, Timestamp, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, deleteDoc, doc, Timestamp, getDoc, where } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { Trash2, Search, Calendar, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface Intervention {
     id: string;
@@ -14,6 +15,7 @@ interface Intervention {
 }
 
 export const InterventionList: React.FC = () => {
+    const { user } = useAuth();
     const [interventions, setInterventions] = useState<Intervention[]>([]);
     const [interventionTypes, setInterventionTypes] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
@@ -29,7 +31,13 @@ export const InterventionList: React.FC = () => {
     const itemsPerPage = 10;
 
     useEffect(() => {
-        const q = query(collection(db, 'interventions'), orderBy('date', 'desc'));
+        if (!user) return;
+
+        const q = query(
+            collection(db, 'interventions'),
+            where('userId', '==', user.uid),
+            orderBy('date', 'desc')
+        );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const interventionsData = snapshot.docs.map(doc => ({

@@ -1,7 +1,8 @@
+```
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Timestamp, doc, getDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { SeasonalityChart } from './SeasonalityChart';
 import { Download } from 'lucide-react';
 import jsPDF from 'jspdf';
@@ -57,7 +58,7 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
                 pdf.setFontSize(10);
                 pdf.setTextColor(100, 100, 100);
                 const dateStr = new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-                pdf.text(`Generato il: ${dateStr}`, pageWidth - margin, margin + 5, { align: 'right' });
+                pdf.text(`Generato il: ${ dateStr } `, pageWidth - margin, margin + 5, { align: 'right' });
 
                 pdf.setDrawColor(200, 200, 200);
                 pdf.line(margin, margin + 8, pageWidth - margin, margin + 8);
@@ -67,7 +68,7 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
             const addFilters = (y: number) => {
                 pdf.setFontSize(10);
                 pdf.setTextColor(60, 60, 60);
-                const text = `Periodo 1: ${new Date(period1Start).toLocaleDateString()} - ${new Date(period1End).toLocaleDateString()} | Periodo 2: ${new Date(period2Start).toLocaleDateString()} - ${new Date(period2End).toLocaleDateString()} | Tipologia: ${selectedType}`;
+                const text = `Periodo 1: ${ new Date(period1Start).toLocaleDateString() } - ${ new Date(period1End).toLocaleDateString() } | Periodo 2: ${ new Date(period2Start).toLocaleDateString() } - ${ new Date(period2End).toLocaleDateString() } | Tipologia: ${ selectedType } `;
                 pdf.text(text, margin, y);
                 return y + 10;
             };
@@ -84,9 +85,9 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
             yPos += 7;
 
             pdf.setFontSize(10);
-            pdf.text(`Periodo 1 (${new Date(period1Start).getFullYear()}): € ${totals.p1Amount.toLocaleString('it-IT', { minimumFractionDigits: 2 })} (${totals.p1Count} interventi)`, margin, yPos);
+            pdf.text(`Periodo 1(${ new Date(period1Start).getFullYear() }): € ${ totals.p1Amount.toLocaleString('it-IT', { minimumFractionDigits: 2 }) } (${ totals.p1Count } interventi)`, margin, yPos);
             yPos += 5;
-            pdf.text(`Periodo 2 (${new Date(period2Start).getFullYear()}): € ${totals.p2Amount.toLocaleString('it-IT', { minimumFractionDigits: 2 })} (${totals.p2Count} interventi)`, margin, yPos);
+            pdf.text(`Periodo 2(${ new Date(period2Start).getFullYear() }): € ${ totals.p2Amount.toLocaleString('it-IT', { minimumFractionDigits: 2 }) } (${ totals.p2Count } interventi)`, margin, yPos);
             yPos += 10;
 
             // Capture Charts
@@ -139,11 +140,11 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
     // Helper for quick year selection
     const handleYearSelect = (year: number, period: 1 | 2) => {
         if (period === 1) {
-            setPeriod1Start(`${year}-01-01`);
-            setPeriod1End(`${year}-12-31`);
+            setPeriod1Start(`${ year }-01-01`);
+            setPeriod1End(`${ year } -12 - 31`);
         } else {
-            setPeriod2Start(`${year}-01-01`);
-            setPeriod2End(`${year}-12-31`);
+            setPeriod2Start(`${ year }-01-01`);
+            setPeriod2End(`${ year } -12 - 31`);
         }
     };
 
@@ -302,7 +303,7 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
                         >
                             <option value="" disabled>Anno rapido</option>
                             {availableYears.map(year => (
-                                <option key={`p1-${year}`} value={year}>{year}</option>
+                                <option key={`p1 - ${ year } `} value={year}>{year}</option>
                             ))}
                         </select>
                     </div>
@@ -334,7 +335,7 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
                         >
                             <option value="" disabled>Anno rapido</option>
                             {availableYears.map(year => (
-                                <option key={`p2-${year}`} value={year}>{year}</option>
+                                <option key={`p2 - ${ year } `} value={year}>{year}</option>
                             ))}
                         </select>
                     </div>
@@ -381,11 +382,11 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="name" />
                                     <YAxis />
-                                    <Tooltip formatter={(value: number) => `€ ${value.toLocaleString('it-IT')}`} />
+                                    <Tooltip formatter={(value: number) => `€ ${ value.toLocaleString('it-IT') } `} />
                                     <Bar dataKey="Incassato" radius={[4, 4, 0, 0]}>
                                         {
-                                            chartData.map((entry, index) => (
-                                                <cell key={`cell-${index}`} fill={index === 0 ? 'var(--primary)' : 'var(--success)'} />
+                                            chartData.map((_, index) => (
+                                                <Cell key={`cell - ${ index } `} fill={index === 0 ? 'var(--primary)' : 'var(--success)'} />
                                             ))
                                         }
                                     </Bar>
@@ -402,8 +403,8 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
                                     <Tooltip />
                                     <Bar dataKey="Interventi" radius={[4, 4, 0, 0]}>
                                         {
-                                            chartData.map((entry, index) => (
-                                                <cell key={`cell-${index}`} fill={index === 0 ? 'var(--primary)' : 'var(--success)'} />
+                                            chartData.map((_, index) => (
+                                                <Cell key={`cell - ${ index } `} fill={index === 0 ? 'var(--primary)' : 'var(--success)'} />
                                             ))
                                         }
                                     </Bar>

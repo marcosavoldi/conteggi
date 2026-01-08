@@ -381,7 +381,7 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="name" />
                                     <YAxis />
-                                    <Tooltip formatter={(value: number) => `€ ${value.toLocaleString('it-IT')}`} />
+                                    <Tooltip formatter={(value: any) => `€ ${Number(value).toLocaleString('it-IT')}`} />
                                     <Bar dataKey="Incassato" radius={[4, 4, 0, 0]}>
                                         {
                                             chartData.map((_, index) => (

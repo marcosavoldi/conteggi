@@ -8,7 +8,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 function App() {
   return (
     <AuthProvider>
-      <Router basename="/conteggi">
+      <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route

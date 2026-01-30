@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { addDoc, collection, Timestamp, doc, getDoc } from 'firebase/firestore';
-import { db } from '../services/firebase';
-import { useAuth } from '../context/AuthContext';
+import { Button, Card, NumberInput, Select, SimpleGrid, Textarea, TextInput, Title } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import { addDoc, collection, doc, getDoc, Timestamp } from 'firebase/firestore';
 import { PlusCircle, Save } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { db } from '../services/firebase';
 
 interface InterventionFormProps {
     onSuccess?: () => void;
@@ -61,95 +63,90 @@ export const InterventionForm: React.FC<InterventionFormProps> = ({ onSuccess })
             });
 
             if (onSuccess) onSuccess();
-            alert('Intervento aggiunto con successo!');
+            notifications.show({
+                title: 'Successo',
+                message: 'Intervento aggiunto con successo!',
+                color: 'green',
+            });
         } catch (error) {
             console.error("Error adding document: ", error);
-            alert('Errore durante l\'aggiunta dell\'intervento');
+            notifications.show({
+                title: 'Errore',
+                message: 'Errore durante l\'aggiunta dell\'intervento',
+                color: 'red',
+            });
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <form onSubmit={handleSubmit} className="card">
-            <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.25rem' }}>
-                <PlusCircle size={24} className="text-primary" style={{ color: 'var(--primary)' }} />
+        <Card shadow="sm" radius="md" withBorder>
+            <Title order={3} mb="lg" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <PlusCircle size={24} style={{ color: 'var(--mantine-color-blue-6)' }} />
                 Nuovo Intervento
-            </h3>
-
-            <div style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))' }}>
-                <div>
-                    <label className="label">Tipologia 🛠️</label>
-                    <select
-                        className="input"
+            </Title>
+            
+            <form onSubmit={handleSubmit}>
+                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+                    <Select
+                        label="Tipologia 🛠️"
+                        placeholder="Seleziona Tipo"
+                        data={interventionTypes}
                         value={formData.type}
-                        onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                        onChange={(value) => setFormData({ ...formData, type: value || '' })}
                         required
-                    >
-                        <option value="">Seleziona Tipo</option>
-                        {interventionTypes.map(type => (
-                            <option key={type} value={type}>{type}</option>
-                        ))}
-                    </select>
-                </div>
+                        searchable
+                    />
 
-                <div>
-                    <label className="label">Cliente 👤</label>
-                    <input
-                        type="text"
-                        className="input"
+                    <TextInput
+                        label="Cliente 👤"
                         placeholder="Nome del cliente"
                         value={formData.clientName}
                         onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
                         required
                     />
-                </div>
 
-                <div>
-                    <label className="label">Data 📅</label>
-                    <input
+                    <TextInput
+                        label="Data 📅"
                         type="date"
-                        className="input"
                         value={formData.date}
                         onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                         required
                     />
-                </div>
 
-                <div>
-                    <label className="label">Importo (€) 💰</label>
-                    <input
-                        type="number"
-                        step="0.01"
-                        className="input"
+                    <NumberInput
+                        label="Importo (€) 💰"
                         placeholder="0.00"
+                        decimalScale={2}
+                        fixedDecimalScale
+                        prefix="€ "
                         value={formData.amount}
-                        onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                        onChange={(value) => setFormData({ ...formData, amount: value.toString() })}
                         required
+                        hideControls
                     />
-                </div>
-            </div>
+                </SimpleGrid>
 
-            <div style={{ marginTop: '1.5rem' }}>
-                <label className="label">Note 📝</label>
-                <textarea
-                    className="input"
+                <Textarea
+                    label="Note 📝"
                     placeholder="Eventuali note aggiuntive..."
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    rows={3}
+                    minRows={3}
+                    mt="md"
                 />
-            </div>
 
-            <button
-                type="submit"
-                className="btn btn-primary"
-                style={{ marginTop: '1.5rem', width: '100%', padding: '0.75rem' }}
-                disabled={loading}
-            >
-                <Save size={20} />
-                {loading ? 'Salvataggio...' : 'Salva Intervento'}
-            </button>
-        </form>
+                <Button
+                    type="submit"
+                    fullWidth
+                    mt="xl"
+                    loading={loading}
+                    leftSection={<Save size={20} />}
+                >
+                    Salva Intervento
+                </Button>
+            </form>
+        </Card>
     );
 };

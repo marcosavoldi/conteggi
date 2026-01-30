@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { Card, SimpleGrid, Title } from '@mantine/core';
 import { Timestamp } from 'firebase/firestore';
+import React, { useMemo } from 'react';
+import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 interface Intervention {
     id: string;
@@ -35,9 +36,9 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ interventions 
     }, [interventions]);
 
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
-            <div className="card">
-                <h3 style={{ marginBottom: '1rem' }}>💰 Incassato Mensile</h3>
+        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg" mb="lg">
+            <Card shadow="sm" radius="md" withBorder>
+                <Title order={3} mb="md">💰 Incassato Mensile</Title>
                 <div style={{ height: '300px' }}>
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={data}>
@@ -46,14 +47,14 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ interventions 
                             <YAxis />
                             <Tooltip formatter={(value) => `€${Number(value).toFixed(2)}`} />
                             <Legend />
-                            <Bar dataKey="amount" fill="var(--primary)" name="Incassato (€)" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="amount" fill="var(--mantine-color-blue-6)" name="Incassato (€)" radius={[4, 4, 0, 0]} />
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
-            </div>
+            </Card>
 
-            <div className="card">
-                <h3 style={{ marginBottom: '1rem' }}>📈 Numero Interventi</h3>
+            <Card shadow="sm" radius="md" withBorder>
+                <Title order={3} mb="md">📈 Numero Interventi</Title>
                 <div style={{ height: '300px' }}>
                     <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={data}>
@@ -62,11 +63,11 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ interventions 
                             <YAxis />
                             <Tooltip />
                             <Legend />
-                            <Line type="monotone" dataKey="count" stroke="var(--success)" name="Quantità" strokeWidth={3} dot={{ r: 4 }} />
+                            <Line type="monotone" dataKey="count" stroke="var(--mantine-color-green-6)" name="Quantità" strokeWidth={3} dot={{ r: 4 }} />
                         </LineChart>
                     </ResponsiveContainer>
                 </div>
-            </div>
-        </div>
+            </Card>
+        </SimpleGrid>
     );
 };

@@ -1,9 +1,10 @@
-
-import React, { useEffect, useState, useMemo } from 'react';
-import { collection, query, orderBy, onSnapshot, deleteDoc, doc, Timestamp, getDoc, where } from 'firebase/firestore';
-import { db } from '../services/firebase';
-import { Trash2, Search, Calendar, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { ActionIcon, Badge, Card, Group, Pagination, Select, SimpleGrid, Stack, Table, Text, TextInput, Title } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import { collection, deleteDoc, doc, getDoc, onSnapshot, orderBy, query, Timestamp, where } from 'firebase/firestore';
+import { Calendar, Search, Trash2 } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { db } from '../services/firebase';
 
 interface Intervention {
     id: string;
@@ -24,7 +25,7 @@ export const InterventionList: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
-    const [selectedType, setSelectedType] = useState('Tutti');
+    const [selectedType, setSelectedType] = useState<string | null>('Tutti');
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
@@ -73,9 +74,18 @@ export const InterventionList: React.FC = () => {
         if (window.confirm('Sei sicuro di voler eliminare questo intervento?')) {
             try {
                 await deleteDoc(doc(db, 'interventions', id));
+                notifications.show({
+                    title: 'Eliminato',
+                    message: 'Intervento eliminato con successo',
+                    color: 'green',
+                });
             } catch (error) {
                 console.error("Error deleting document: ", error);
-                alert('Errore durante l\'eliminazione');
+                notifications.show({
+                    title: 'Errore',
+                    message: 'Errore durante l\'eliminazione',
+                    color: 'red',
+                });
             }
         }
     };
@@ -84,7 +94,7 @@ export const InterventionList: React.FC = () => {
     const filteredInterventions = useMemo(() => {
         return interventions.filter(intervention => {
             const matchesSearch = intervention.clientName.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesType = selectedType === 'Tutti' || intervention.type === selectedType;
+            const matchesType = (selectedType === 'Tutti' || !selectedType) || intervention.type === selectedType;
 
             let matchesDate = true;
             if (startDate || endDate) {
@@ -112,156 +122,153 @@ export const InterventionList: React.FC = () => {
     }, [searchTerm, selectedType, startDate, endDate]);
 
     if (loading) {
-        return <div className="card">Caricamento interventi...</div>;
+        return <Card p="xl"><Text ta="center">Caricamento interventi...</Text></Card>;
     }
 
     return (
-        <div className="card" style={{ marginTop: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <h3 style={{ fontSize: '1.25rem' }}>📋 Storico Interventi</h3>
+        <Card shadow="sm" radius="md" withBorder mt="xl">
+            <Group justify="space-between" mb="lg">
+                <Title order={3}>📋 Storico Interventi</Title>
+            </Group>
 
-                {/* Search & Filter Controls */}
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    <div style={{ position: 'relative' }}>
-                        <Search size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                        <input
-                            type="text"
-                            placeholder="Cerca cliente..."
-                            className="input"
-                            style={{ paddingLeft: '2.5rem', width: '200px' }}
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
+            {/* Search & Filter Controls */}
+            <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} spacing="md" mb="lg">
+                <TextInput
+                    placeholder="Cerca cliente..."
+                    leftSection={<Search size={16} />}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <Select
+                    placeholder="Tutti i servizi"
+                    data={['Tutti', ...interventionTypes]}
+                    value={selectedType}
+                    onChange={setSelectedType}
+                />
+                <TextInput
+                    type="date"
+                    leftSection={<Calendar size={16} />}
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                />
+                <TextInput
+                    type="date"
+                    leftSection={<Calendar size={16} />}
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                />
+            </SimpleGrid>
 
-                    <div style={{ position: 'relative' }}>
-                        <Filter size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                        <select
-                            className="input"
-                            style={{ paddingLeft: '2.5rem', width: '180px' }}
-                            value={selectedType}
-                            onChange={(e) => setSelectedType(e.target.value)}
-                        >
-                            <option value="Tutti">Tutti i servizi</option>
-                            {interventionTypes.map(type => (
-                                <option key={type} value={type}>{type}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div style={{ position: 'relative' }}>
-                        <Calendar size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                        <input
-                            type="date"
-                            className="input"
-                            style={{ paddingLeft: '2.5rem' }}
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                        />
-                    </div>
-                    <div style={{ position: 'relative' }}>
-                        <Calendar size={18} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                        <input
-                            type="date"
-                            className="input"
-                            style={{ paddingLeft: '2.5rem' }}
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                        />
-                    </div>
-                </div>
-            </div>
-
-            <div className="table-container">
-                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
-                    <thead>
-                        <tr style={{ borderBottom: '2px solid var(--border)', textAlign: 'left' }}>
-                            <th style={{ padding: '1rem', color: 'var(--text-secondary)' }}>Data</th>
-                            <th style={{ padding: '1rem', color: 'var(--text-secondary)' }}>Cliente</th>
-                            <th style={{ padding: '1rem', color: 'var(--text-secondary)' }}>Tipologia</th>
-                            <th style={{ padding: '1rem', color: 'var(--text-secondary)' }}>Importo</th>
-                            <th style={{ padding: '1rem', color: 'var(--text-secondary)' }}>Note</th>
-                            <th style={{ padding: '1rem', color: 'var(--text-secondary)' }}>Azioni</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            {/* Desktop Table View */}
+            <Table.ScrollContainer minWidth={800} visibleFrom="sm">
+                <Table striped highlightOnHover verticalSpacing="sm">
+                    <Table.Thead>
+                        <Table.Tr>
+                            <Table.Th>Data</Table.Th>
+                            <Table.Th>Cliente</Table.Th>
+                            <Table.Th>Tipologia</Table.Th>
+                            <Table.Th>Importo</Table.Th>
+                            <Table.Th>Note</Table.Th>
+                            <Table.Th>Azioni</Table.Th>
+                        </Table.Tr>
+                    </Table.Thead>
+                    <Table.Tbody>
                         {paginatedInterventions.map((intervention) => (
-                            <tr key={intervention.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                                <td style={{ padding: '1rem' }}>
+                            <Table.Tr key={intervention.id}>
+                                <Table.Td>
                                     {intervention.date.toDate().toLocaleDateString('it-IT')}
-                                </td>
-                                <td style={{ padding: '1rem', fontWeight: 600 }}>{intervention.clientName}</td>
-                                <td style={{ padding: '1rem' }}>
-                                    <span style={{
-                                        background: '#e0e7ff',
-                                        color: '#4338ca',
-                                        padding: '0.25rem 0.75rem',
-                                        borderRadius: '999px',
-                                        fontSize: '0.875rem',
-                                        fontWeight: 500
-                                    }}>
+                                </Table.Td>
+                                <Table.Td fw={600}>{intervention.clientName}</Table.Td>
+                                <Table.Td>
+                                    <Badge variant="light" color="blue">
                                         {intervention.type}
-                                    </span>
-                                </td>
-                                <td style={{ padding: '1rem', fontWeight: 500 }}>€{intervention.amount.toFixed(2)}</td>
-                                <td style={{ padding: '1rem', color: 'var(--text-secondary)', fontSize: '0.875rem', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {intervention.notes}
-                                </td>
-                                <td style={{ padding: '1rem' }}>
-                                    <button
+                                    </Badge>
+                                </Table.Td>
+                                <Table.Td fw={500}>€{intervention.amount.toFixed(2)}</Table.Td>
+                                <Table.Td>
+                                    <Text size="sm" c="dimmed" truncate style={{ maxWidth: '200px' }}>
+                                        {intervention.notes}
+                                    </Text>
+                                </Table.Td>
+                                <Table.Td>
+                                    <ActionIcon
+                                        variant="subtle"
+                                        color="red"
                                         onClick={() => handleDelete(intervention.id)}
-                                        style={{
-                                            background: '#fee2e2',
-                                            border: 'none',
-                                            color: 'var(--danger)',
-                                            cursor: 'pointer',
-                                            padding: '0.5rem',
-                                            borderRadius: '0.375rem',
-                                            transition: 'background 0.2s'
-                                        }}
                                         title="Elimina"
                                     >
                                         <Trash2 size={18} />
-                                    </button>
-                                </td>
-                            </tr>
+                                    </ActionIcon>
+                                </Table.Td>
+                            </Table.Tr>
                         ))}
-                        {paginatedInterventions.length === 0 && (
-                            <tr>
-                                <td colSpan={6} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                                    <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📭</div>
-                                    Nessun intervento trovato.
-                                </td>
-                            </tr>
+                         {paginatedInterventions.length === 0 && (
+                            <Table.Tr>
+                                <Table.Td colSpan={6} style={{ textAlign: 'center', padding: '3rem' }}>
+                                    <Text size="xl" mb="sm">📭</Text>
+                                    <Text c="dimmed">Nessun intervento trovato.</Text>
+                                </Table.Td>
+                            </Table.Tr>
                         )}
-                    </tbody>
-                </table>
+                    </Table.Tbody>
+                </Table>
+            </Table.ScrollContainer>
+
+             {/* Mobile Card View */}
+             <div className="mantine-hidden-from-sm">
+                <Stack gap="xs">
+                    {paginatedInterventions.map((intervention) => (
+                        <Card key={intervention.id} shadow="sm" radius="md" withBorder p="sm">
+                            <Group justify="space-between" align="center" mb={4} wrap="nowrap">
+                                <Text fw={600} size="sm" truncate>{intervention.clientName}</Text>
+                                <Text fw={700} size="sm">€{intervention.amount.toFixed(2)}</Text>
+                            </Group>
+
+                            <Group justify="space-between" align="center" wrap="nowrap">
+                                <Group gap="xs">
+                                    <Text size="xs" c="dimmed">
+                                        {intervention.date.toDate().toLocaleDateString('it-IT')}
+                                    </Text>
+                                    <Badge variant="outline" color="blue" size="xs">
+                                        {intervention.type}
+                                    </Badge>
+                                </Group>
+                                <ActionIcon 
+                                    color="red" 
+                                    variant="subtle" 
+                                    size="sm"
+                                    onClick={() => handleDelete(intervention.id)}
+                                >
+                                    <Trash2 size={16} />
+                                </ActionIcon>
+                            </Group>
+
+                            {intervention.notes && (
+                                <Text size="xs" c="dimmed" lineClamp={1} mt={4} style={{ fontStyle: 'italic' }}>
+                                    {intervention.notes}
+                                </Text>
+                            )}
+                        </Card>
+                    ))}
+                    {paginatedInterventions.length === 0 && (
+                        <Card p="md" withBorder>
+                             <Text ta="center" size="sm" mb="xs">📭</Text>
+                             <Text ta="center" size="xs" c="dimmed">Nessun intervento trovato.</Text>
+                        </Card>
+                    )}
+                </Stack>
             </div>
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '1.5rem' }}>
-                    <button
-                        className="btn"
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                        style={{ padding: '0.5rem', opacity: currentPage === 1 ? 0.5 : 1 }}
-                    >
-                        <ChevronLeft size={20} />
-                    </button>
-                    <span style={{ fontWeight: 500, color: 'var(--text-secondary)' }}>
-                        Pagina {currentPage} di {totalPages}
-                    </span>
-                    <button
-                        className="btn"
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                        disabled={currentPage === totalPages}
-                        style={{ padding: '0.5rem', opacity: currentPage === totalPages ? 0.5 : 1 }}
-                    >
-                        <ChevronRight size={20} />
-                    </button>
-                </div>
+                <Group justify="center" mt="xl">
+                    <Pagination
+                        total={totalPages}
+                        value={currentPage}
+                        onChange={setCurrentPage}
+                    />
+                </Group>
             )}
-        </div>
+        </Card>
     );
 };

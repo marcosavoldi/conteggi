@@ -1,13 +1,15 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { LogOut, Settings, Filter } from 'lucide-react';
+import { ActionIcon, Affix, AppShell, Box, Button, Card, Container, Group, Modal, Select, SimpleGrid, Text, TextInput, ThemeIcon, Title } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
+import { collection, doc, getDoc, onSnapshot, orderBy, query, Timestamp, where } from 'firebase/firestore';
+import { Filter, LogOut, Plus, Settings } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ComparisonTable } from '../components/ComparisonTable';
+import { DashboardCharts } from '../components/DashboardCharts';
 import { InterventionForm } from '../components/InterventionForm';
 import { InterventionList } from '../components/InterventionList';
-import { DashboardCharts } from '../components/DashboardCharts';
-import { ComparisonTable } from '../components/ComparisonTable';
-import { collection, query, onSnapshot, orderBy, Timestamp, doc, getDoc, where } from 'firebase/firestore';
+import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firebase';
-import { useNavigate } from 'react-router-dom';
 
 interface Intervention {
     id: string;
@@ -18,16 +20,14 @@ interface Intervention {
     notes?: string;
 }
 
-import { ExcelImport } from '../components/ExcelImport';
-
 export const Dashboard: React.FC = () => {
     const { user, signOut } = useAuth();
     const navigate = useNavigate();
     const [interventions, setInterventions] = useState<Intervention[]>([]);
     const [interventionTypes, setInterventionTypes] = useState<string[]>([]);
-
+    const [opened, { open, close }] = useDisclosure(false);
     // Filter States
-    const [selectedType, setSelectedType] = useState('Tutti');
+    const [selectedType, setSelectedType] = useState<string | null>('Tutti');
     const [startDate, setStartDate] = useState(() => {
         const date = new Date();
         date.setMonth(0, 1); // Start of current year
@@ -80,10 +80,10 @@ export const Dashboard: React.FC = () => {
             const end = new Date(endDate);
             end.setHours(23, 59, 59, 999); // Include the entire end day
 
-            const normalizedSelectedType = selectedType.trim().toLowerCase();
+            const normalizedSelectedType = (selectedType || 'Tutti').trim().toLowerCase();
             const normalizedInterventionType = intervention.type.trim().toLowerCase();
 
-            const matchesType = selectedType === 'Tutti' || normalizedInterventionType === normalizedSelectedType;
+            const matchesType = normalizedSelectedType === 'tutti' || normalizedInterventionType === normalizedSelectedType;
             const matchesDate = date >= start && date <= end;
 
             return matchesType && matchesDate;
@@ -118,109 +118,132 @@ export const Dashboard: React.FC = () => {
     }, [filteredInterventions]);
 
     return (
-        <div>
-            <header style={{
-                background: 'var(--surface)',
-                borderBottom: '1px solid var(--border)',
-                padding: '0.75rem 1rem', // Reduced padding for mobile
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                position: 'sticky',
-                top: 0,
-                zIndex: 10
-            }}>
-                <h1 style={{ fontSize: '1.25rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    📊 <span className="hide-mobile">Dashboard</span>
-                </h1>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <ExcelImport />
-                    <span className="hide-mobile" style={{ fontSize: '0.9rem' }}>{user?.displayName}</span>
-                    <button
-                        className="btn"
-                        onClick={() => navigate('/settings')}
-                        style={{ border: '1px solid var(--border)', padding: '0.5rem' }}
-                        title="Impostazioni"
-                    >
-                        <Settings size={18} />
-                        <span className="hide-mobile">Settings</span>
-                    </button>
-                    <button className="btn" onClick={signOut} style={{ color: 'var(--danger)', border: '1px solid var(--border)', padding: '0.5rem' }} title="Esci">
-                        <LogOut size={18} />
-                        <span className="hide-mobile">Esci</span>
-                    </button>
-                </div>
-            </header>
+        <AppShell
+            header={{ height: 60 }}
+            padding="md"
+        >
+            <AppShell.Header>
+                <Group h="100%" px="md" justify="space-between" wrap="nowrap">
+                    <Group wrap="nowrap">
+                        <Title order={3} size="h4">📊 Dashboard</Title>
+                    </Group>
+                    <Group gap="xs" wrap="nowrap">
+                        <Button
+                             variant="default"
+                             onClick={() => navigate('/settings')}
+                             leftSection={<Settings size={16} />}
+                             title="Impostazioni"
+                             px="xs"
+                        >
+                            <Text span visibleFrom="sm" size="sm">Settings</Text>
+                        </Button>
+                        <Button
+                            color="red"
+                            variant="subtle"
+                            onClick={signOut}
+                            leftSection={<LogOut size={16} />}
+                            title="Esci"
+                            px="xs"
+                        >
+                            <Text span visibleFrom="sm" size="sm">Esci</Text>
+                        </Button>
+                    </Group>
+                </Group>
+            </AppShell.Header>
 
-            <main className="container">
-                {/* Summary Cards */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-                    <div className="card" style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', color: 'white' }}>
-                        <h3 style={{ fontSize: '0.875rem', opacity: 0.9, marginBottom: '0.5rem' }}>Incasso Anno Corrente</h3>
-                        <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>€{summaryStats.yearTotal.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
+            <AppShell.Main>
+                <Container size="xl">
+                    <div style={{ marginBottom: '2rem' }}>
+                        <Text size="lg" fw={500}>Bentornato,</Text>
+                        <Text size="xl" fw={700} c="blue">{user?.displayName}</Text>
                     </div>
-                    <div className="card" style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white' }}>
-                        <h3 style={{ fontSize: '0.875rem', opacity: 0.9, marginBottom: '0.5rem' }}>Incasso Mese Corrente</h3>
-                        <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>€{summaryStats.monthTotal.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
-                    </div>
-                    <div className="card" style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: 'white' }}>
-                        <h3 style={{ fontSize: '0.875rem', opacity: 0.9, marginBottom: '0.5rem' }}>Incasso Periodo Selezionato</h3>
-                        <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>€{filteredTotal.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
-                    </div>
-                </div>
 
-                {/* Filters for Charts */}
-                <div className="card" style={{ marginBottom: '2rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                        <Filter size={20} />
-                        <h3>Filtri Analisi</h3>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                        <div className="form-group">
-                            <label>Tipologia</label>
-                            <select
-                                className="input"
+                    {/* Summary Cards */}
+                    <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" mb="xl">
+                        <Card shadow="sm" radius="md" p="md" style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', color: 'white' }}>
+                            <Text size="xs" tt="uppercase" fw={700} style={{ opacity: 0.9 }}>Incasso Anno Corrente</Text>
+                            <Text size="xl" fw={700} style={{ fontSize: '2rem' }}>€{summaryStats.yearTotal.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</Text>
+                        </Card>
+                        <Card shadow="sm" radius="md" p="md" style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white' }}>
+                            <Text size="xs" tt="uppercase" fw={700} style={{ opacity: 0.9 }}>Incasso Mese Corrente</Text>
+                            <Text size="xl" fw={700} style={{ fontSize: '2rem' }}>€{summaryStats.monthTotal.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</Text>
+                        </Card>
+                        <Card shadow="sm" radius="md" p="md" style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: 'white' }}>
+                            <Text size="xs" tt="uppercase" fw={700} style={{ opacity: 0.9 }}>Incasso Periodo Selezionato</Text>
+                            <Text size="xl" fw={700} style={{ fontSize: '2rem' }}>€{filteredTotal.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</Text>
+                        </Card>
+                    </SimpleGrid>
+
+                    {/* Filters for Charts */}
+                    <Card shadow="sm" radius="md" withBorder mb="xl">
+                        <Group mb="md">
+                            <ThemeIcon variant="light" size="lg">
+                                <Filter size={20} />
+                            </ThemeIcon>
+                            <Title order={4}>Filtri Analisi</Title>
+                        </Group>
+                        <SimpleGrid cols={{ base: 1, sm: 3 }}>
+                            <Select
+                                label="Tipologia"
+                                data={['Tutti', ...interventionTypes]}
                                 value={selectedType}
-                                onChange={(e) => setSelectedType(e.target.value)}
-                            >
-                                <option value="Tutti">Tutti</option>
-                                {interventionTypes.map(type => (
-                                    <option key={type} value={type}>{type}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="form-group">
-                            <label>Da</label>
-                            <input
+                                onChange={setSelectedType}
+                            />
+                            <TextInput
+                                label="Da"
                                 type="date"
-                                className="input"
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
                             />
-                        </div>
-                        <div className="form-group">
-                            <label>A</label>
-                            <input
+                            <TextInput
+                                label="A"
                                 type="date"
-                                className="input"
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
                             />
-                        </div>
-                    </div>
-                </div>
+                        </SimpleGrid>
+                    </Card>
 
-                <DashboardCharts interventions={filteredInterventions} />
+                    <DashboardCharts interventions={filteredInterventions} />
 
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem', marginTop: '3rem' }}>Confronto Periodi</h2>
-                <ComparisonTable interventions={interventions} />
+                    <Title order={2} mt={50} mb="md">Confronto Periodi</Title>
+                    <ComparisonTable interventions={interventions} />
 
-                <div style={{ marginBottom: '2rem', marginTop: '3rem' }}>
-                    <InterventionForm />
-                </div>
+                    <Box visibleFrom="sm" style={{ marginBottom: '2rem', marginTop: '3rem' }}>
+                        <InterventionForm />
+                    </Box>
 
-                <InterventionList />
-            </main>
-        </div>
+                    <Affix position={{ bottom: 20, right: 20 }} hiddenFrom="sm">
+                        <ActionIcon 
+                            onClick={open} 
+                            radius="xl" 
+                            size={60} 
+                            color="blue" 
+                            variant="filled" 
+                            style={{ boxShadow: 'var(--mantine-shadow-xl)' }}
+                        >
+                            <Plus size={30} />
+                        </ActionIcon>
+                    </Affix>
+
+                    <Modal 
+                        opened={opened} 
+                        onClose={close} 
+                        title="Nuovo Intervento" 
+                        centered
+                        closeButtonProps={{
+                            size: 'xl',
+                            iconSize: 30,
+                            radius: 'xl',
+                            'aria-label': 'Chiudi modale',
+                        }}
+                    >
+                        <InterventionForm onSuccess={close} />
+                    </Modal>
+
+                    <InterventionList />
+                </Container>
+            </AppShell.Main>
+        </AppShell>
     );
 };

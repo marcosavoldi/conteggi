@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, collection, getDocs, writeBatch, query } from 'firebase/firestore';
-import { db } from '../services/firebase';
-import { ArrowLeft, Plus, Trash2, Settings as SettingsIcon } from 'lucide-react';
+import { ActionIcon, Button, Card, Container, Group, Text, TextInput, Title } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import { arrayRemove, arrayUnion, collection, doc, getDoc, getDocs, query, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
+import { ArrowLeft, Database, Plus, Settings as SettingsIcon, Trash2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
 import { useAuth } from '../context/AuthContext';
-import { Database } from 'lucide-react';
+import { db } from '../services/firebase';
 
 export const Settings: React.FC = () => {
     const { user } = useAuth();
@@ -42,7 +42,11 @@ export const Settings: React.FC = () => {
             }
         } catch (error: any) {
             console.error("Error fetching types:", error);
-            alert(`Errore caricamento impostazioni: ${error.message || error}`);
+            notifications.show({
+                title: 'Errore',
+                message: `Errore caricamento impostazioni: ${error.message || error}`,
+                color: 'red',
+            });
         } finally {
             setLoading(false);
         }
@@ -59,9 +63,18 @@ export const Settings: React.FC = () => {
             });
             setTypes([...types, newType.trim()]);
             setNewType('');
+            notifications.show({
+                title: 'Successo',
+                message: 'Tipologia aggiunta con successo!',
+                color: 'green',
+            });
         } catch (error: any) {
             console.error("Error adding type:", error);
-            alert(`Errore durante l'aggiunta della tipologia: ${error.message || error}`);
+            notifications.show({
+                title: 'Errore',
+                message: `Errore durante l'aggiunta della tipologia: ${error.message || error}`,
+                color: 'red',
+            });
         }
     };
 
@@ -74,9 +87,18 @@ export const Settings: React.FC = () => {
                 interventionTypes: arrayRemove(typeToDelete)
             });
             setTypes(types.filter(t => t !== typeToDelete));
+            notifications.show({
+                title: 'Eliminato',
+                message: 'Tipologia eliminata con successo',
+                color: 'green',
+            });
         } catch (error) {
             console.error("Error deleting type:", error);
-            alert("Errore durante l'eliminazione della tipologia");
+            notifications.show({
+                title: 'Errore',
+                message: 'Errore durante l\'eliminazione della tipologia',
+                color: 'red',
+            });
         }
     };
 
@@ -86,7 +108,6 @@ export const Settings: React.FC = () => {
 
         setLoading(true);
         try {
-            // Fetch ALL interventions (this might be heavy if lots of data, but ok for now)
             const q = query(collection(db, 'interventions'));
             const snapshot = await getDocs(q);
 
@@ -95,7 +116,6 @@ export const Settings: React.FC = () => {
 
             snapshot.docs.forEach((doc) => {
                 const data = doc.data();
-                // If userId is missing or different (though we probably only want missing ones)
                 if (!data.userId) {
                     batch.update(doc.ref, { userId: user.uid });
                     count++;
@@ -104,14 +124,26 @@ export const Settings: React.FC = () => {
 
             if (count > 0) {
                 await batch.commit();
-                alert(`Hai recuperato con successo ${count} interventi!`);
+                notifications.show({
+                    title: 'Successo',
+                    message: `Hai recuperato con successo ${count} interventi!`,
+                    color: 'green',
+                });
             } else {
-                alert("Non ci sono interventi da recuperare (hanno già tutti un proprietario).");
+                notifications.show({
+                    title: 'Info',
+                    message: "Non ci sono interventi da recuperare (hanno già tutti un proprietario).",
+                    color: 'blue',
+                });
             }
 
         } catch (error: any) {
             console.error("Error claiming data:", error);
-            alert(`Errore durante il recupero: ${error.message}`);
+            notifications.show({
+                title: 'Errore',
+                message: `Errore durante il recupero: ${error.message}`,
+                color: 'red',
+            });
         } finally {
             setLoading(false);
         }
@@ -132,122 +164,93 @@ export const Settings: React.FC = () => {
             });
 
             await batch.commit();
-            alert("Tutti gli interventi sono stati eliminati.");
+            notifications.show({
+                title: 'Eliminato',
+                message: "Tutti gli interventi sono stati eliminati.",
+                color: 'green',
+            });
         } catch (error: any) {
             console.error("Error deleting all:", error);
-            alert(`Errore durante l'eliminazione: ${error.message}`);
+            notifications.show({
+                title: 'Errore',
+                message: `Errore durante l'eliminazione: ${error.message}`,
+                color: 'red',
+            });
         } finally {
             setLoading(false);
         }
     };
 
-    if (loading) return <div className="container">Caricamento...</div>;
+    if (loading) return <Container size="sm" py="xl"><Text ta="center">Caricamento...</Text></Container>;
 
     return (
-        <div className="container">
-            <header style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <button onClick={() => navigate('/')} className="btn" style={{ background: 'transparent', padding: 0 }}>
+        <Container size="sm" py="xl">
+            <Group mb="xl">
+                <ActionIcon variant="transparent" onClick={() => navigate('/')} color="dark">
                     <ArrowLeft size={24} />
-                </button>
-                <h1 style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                </ActionIcon>
+                <Title order={2} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <SettingsIcon /> Impostazioni
-                </h1>
-            </header>
+                </Title>
+            </Group>
 
-            <div className="card" style={{ maxWidth: '600px', margin: '0 auto', marginBottom: '2rem' }}>
-                <h2 style={{ marginBottom: '1.5rem', fontSize: '1.25rem' }}>Gestione Tipologie Intervento</h2>
+            <Card shadow="sm" radius="md" withBorder mb="lg">
+                <Title order={3} size="h4" mb="md">Gestione Tipologie Intervento</Title>
 
-                <form onSubmit={handleAddType} style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem' }}>
-                    <input
-                        type="text"
-                        className="input"
-                        placeholder="Nuova tipologia..."
-                        value={newType}
-                        onChange={(e) => setNewType(e.target.value)}
-                        style={{ marginTop: 0 }}
-                    />
-                    <button type="submit" className="btn btn-primary" disabled={!newType.trim()}>
-                        <Plus size={20} />
-                        Aggiungi
-                    </button>
+                <form onSubmit={handleAddType}>
+                    <Group mb="md">
+                        <TextInput
+                            placeholder="Nuova tipologia..."
+                            value={newType}
+                            onChange={(e) => setNewType(e.target.value)}
+                            style={{ flex: 1 }}
+                        />
+                        <Button type="submit" disabled={!newType.trim()} leftSection={<Plus size={18} />}>
+                            Aggiungi
+                        </Button>
+                    </Group>
                 </form>
 
-                <ul style={{ listStyle: 'none', padding: 0 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {types.map((type) => (
-                        <li key={type} style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            padding: '1rem',
-                            borderBottom: '1px solid var(--border)',
-                            background: 'var(--background)',
-                            marginBottom: '0.5rem',
-                            borderRadius: 'var(--radius)'
-                        }}>
-                            <span style={{ fontWeight: 500 }}>{type}</span>
-                            <button
-                                onClick={() => handleDeleteType(type)}
-                                style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    color: 'var(--danger)',
-                                    cursor: 'pointer',
-                                    padding: '0.5rem'
-                                }}
-                                title="Elimina"
-                            >
-                                <Trash2 size={18} />
-                            </button>
-                        </li>
+                        <Card key={type} withBorder padding="sm" radius="sm">
+                            <Group justify="space-between">
+                                <Text fw={500}>{type}</Text>
+                                <ActionIcon color="red" variant="subtle" onClick={() => handleDeleteType(type)} title="Elimina">
+                                    <Trash2 size={18} />
+                                </ActionIcon>
+                            </Group>
+                        </Card>
                     ))}
                     {types.length === 0 && (
-                        <li style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '1rem' }}>
+                        <Text ta="center" c="dimmed" py="md">
                             Nessuna tipologia presente. Aggiungine una!
-                        </li>
+                        </Text>
                     )}
-                </ul>
-            </div>
+                </div>
+            </Card>
 
-            <div className="card" style={{ maxWidth: '600px', margin: '0 auto', marginBottom: '2rem', border: '1px solid var(--primary)' }}>
-                <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Card shadow="sm" radius="md" withBorder mb="lg" style={{ borderColor: 'var(--mantine-color-blue-6)' }}>
+                <Title order={3} size="h4" mb="md" c="blue" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <Database size={20} /> Recupero Dati
-                </h2>
-                <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>
+                </Title>
+                <Text c="dimmed" mb="md" size="sm">
                     Se non vedi i tuoi vecchi dati, usa questo pulsante per assegnare tutti gli interventi esistenti (senza proprietario) al tuo utente attuale.
-                </p>
-                <button
-                    onClick={handleClaimData}
-                    className="btn"
-                    style={{
-                        background: 'var(--primary)',
-                        color: 'white',
-                        width: '100%',
-                        justifyContent: 'center'
-                    }}
-                >
+                </Text>
+                <Button onClick={handleClaimData} fullWidth>
                     Recupera Vecchi Dati
-                </button>
-            </div>
+                </Button>
+            </Card>
 
-            <div className="card" style={{ maxWidth: '600px', margin: '0 auto', border: '1px solid var(--danger)', background: '#fff1f2' }}>
-                <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem', color: 'var(--danger)' }}>Zona Pericolo</h2>
-                <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>
+            <Card shadow="sm" radius="md" withBorder style={{ borderColor: 'var(--mantine-color-red-6)', backgroundColor: 'var(--mantine-color-red-0)' }}>
+                <Title order={3} size="h4" mb="md" c="red">Zona Pericolo</Title>
+                <Text c="dimmed" mb="md" size="sm">
                     Questa azione eliminerà permanentemente tutti gli interventi salvati nel database. Usare con cautela.
-                </p>
-                <button
-                    onClick={handleDeleteAll}
-                    className="btn"
-                    style={{
-                        background: 'var(--danger)',
-                        color: 'white',
-                        width: '100%',
-                        justifyContent: 'center'
-                    }}
-                >
-                    <Trash2 size={18} />
+                </Text>
+                <Button onClick={handleDeleteAll} color="red" fullWidth leftSection={<Trash2 size={18} />}>
                     Elimina Tutto il Database
-                </button>
-            </div>
-        </div>
+                </Button>
+            </Card>
+        </Container>
     );
 };

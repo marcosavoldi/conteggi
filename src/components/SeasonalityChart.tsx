@@ -1,11 +1,20 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import { Button, Card, Group, Loader, Paper, Text, Title } from '@mantine/core';
+import { CloudSun } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-    ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+    CartesianGrid,
+    ComposedChart,
+    Legend,
+    Line,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis
 } from 'recharts';
 import { fetchWeatherData, type WeatherData } from '../services/weather';
-import { CloudSun } from 'lucide-react';
 import { DailyDetailModal, type DailyComparisonData } from './DailyDetailModal';
 
+// ... (keep interfaces)
 interface Intervention {
     id: string;
     type: string;
@@ -260,61 +269,54 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
         if (active && payload && payload.length) {
             const data = payload[0].payload;
             return (
-                <div style={{ background: 'var(--surface)', padding: '1rem', border: '1px solid var(--border)', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-                    <p style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>{label}</p>
+                <Paper p="md" shadow="md" withBorder>
+                    <Text fw={700} mb="xs">{label}</Text>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <div>
-                            <p style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '0.9rem' }}>Periodo 1</p>
-                            <p>Interventi: <strong>{data.p1Count}</strong></p>
+                            <Text c="blue.6" fw={600} size="sm">Periodo 1</Text>
+                            <Text size="sm">Interventi: <strong>{data.p1Count}</strong></Text>
                             {data.p1Days > 0 && (
-                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                                    <p>🌡️ Max: {data.p1TempMax}°C</p>
-                                    <p>❄️ Min: {data.p1TempMin}°C</p>
-                                    <p>🌧️ {data.p1Rain}mm</p>
-                                </div>
+                                <Text size="xs" c="dimmed" mt={4}>
+                                    <div key="tmax">🌡️ Max: {data.p1TempMax}°C</div>
+                                    <div key="tmin">❄️ Min: {data.p1TempMin}°C</div>
+                                    <div key="rain">🌧️ {data.p1Rain}mm</div>
+                                </Text>
                             )}
                         </div>
                         <div>
-                            <p style={{ color: 'var(--success)', fontWeight: 600, fontSize: '0.9rem' }}>Periodo 2</p>
-                            <p>Interventi: <strong>{data.p2Count}</strong></p>
+                            <Text c="green.6" fw={600} size="sm">Periodo 2</Text>
+                            <Text size="sm">Interventi: <strong>{data.p2Count}</strong></Text>
                             {data.p2Days > 0 && (
-                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                                    <p>🌡️ Max: {data.p2TempMax}°C</p>
-                                    <p>❄️ Min: {data.p2TempMin}°C</p>
-                                    <p>🌧️ {data.p2Rain}mm</p>
-                                </div>
+                                <Text size="xs" c="dimmed" mt={4}>
+                                    <div key="tmax2">🌡️ Max: {data.p2TempMax}°C</div>
+                                    <div key="tmin2">❄️ Min: {data.p2TempMin}°C</div>
+                                    <div key="rain2">🌧️ {data.p2Rain}mm</div>
+                                </Text>
                             )}
                         </div>
                     </div>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.5rem', fontStyle: 'italic' }}>
+                    <Text size="xs" c="dimmed" mt="sm" style={{ fontStyle: 'italic' }}>
                         Clicca per dettagli giornalieri
-                    </p>
-                </div>
+                    </Text>
+                </Paper>
             );
         }
         return null;
     };
 
     return (
-        <div className="card" style={{ marginTop: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <h3 style={{ fontSize: '1.25rem' }}>📈 Stagionalità e Meteo</h3>
-                <button
-                    className="btn"
+        <Card shadow="sm" radius="md" withBorder mt="lg">
+            <Group justify="space-between" mb="lg">
+                <Title order={3}>📈 Stagionalità e Meteo</Title>
+                <Button
+                    variant={showWeather ? "filled" : "outline"}
                     onClick={() => setShowWeather(!showWeather)}
-                    style={{
-                        background: showWeather ? 'var(--primary)' : 'var(--background)',
-                        color: showWeather ? 'white' : 'var(--text)',
-                        border: '1px solid var(--border)'
-                    }}
+                    leftSection={loadingWeather ? <Loader size={16} color="white" /> : <CloudSun size={18} />}
                 >
-                    {loadingWeather ? <span className="spin">⌛</span> : <CloudSun size={18} />}
-                    <span className="hide-mobile" style={{ marginLeft: '0.5rem' }}>
-                        {showWeather ? 'Nascondi Meteo' : 'Mostra Meteo'}
-                    </span>
-                </button>
-            </div>
+                   {showWeather ? 'Nascondi Meteo' : 'Mostra Meteo'}
+                </Button>
+            </Group>
 
             <div style={{ height: '400px', cursor: 'pointer' }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -327,15 +329,15 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
                         <Tooltip content={<CustomTooltip />} />
                         <Legend />
 
-                        <Line yAxisId="left" type="monotone" dataKey="p1Count" name="Interventi P1" stroke="var(--primary)" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                        <Line yAxisId="left" type="monotone" dataKey="p2Count" name="Interventi P2" stroke="var(--success)" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                        <Line yAxisId="left" type="monotone" dataKey="p1Count" name="Interventi P1" stroke="var(--mantine-color-blue-6)" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                        <Line yAxisId="left" type="monotone" dataKey="p2Count" name="Interventi P2" stroke="var(--mantine-color-green-6)" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
 
                         {showWeather && (
                             <>
-                                <Line yAxisId="right" type="monotone" dataKey="p1TempMax" name="Max P1" stroke="var(--primary)" strokeDasharray="5 5" strokeWidth={1} dot={false} />
-                                <Line yAxisId="right" type="monotone" dataKey="p1TempMin" name="Min P1" stroke="var(--primary)" strokeDasharray="3 3" strokeWidth={1} dot={false} opacity={0.7} />
-                                <Line yAxisId="right" type="monotone" dataKey="p2TempMax" name="Max P2" stroke="var(--success)" strokeDasharray="5 5" strokeWidth={1} dot={false} />
-                                <Line yAxisId="right" type="monotone" dataKey="p2TempMin" name="Min P2" stroke="var(--success)" strokeDasharray="3 3" strokeWidth={1} dot={false} opacity={0.7} />
+                                <Line yAxisId="right" type="monotone" dataKey="p1TempMax" name="Max P1" stroke="var(--mantine-color-blue-6)" strokeDasharray="5 5" strokeWidth={1} dot={false} />
+                                <Line yAxisId="right" type="monotone" dataKey="p1TempMin" name="Min P1" stroke="var(--mantine-color-blue-6)" strokeDasharray="3 3" strokeWidth={1} dot={false} opacity={0.7} />
+                                <Line yAxisId="right" type="monotone" dataKey="p2TempMax" name="Max P2" stroke="var(--mantine-color-green-6)" strokeDasharray="5 5" strokeWidth={1} dot={false} />
+                                <Line yAxisId="right" type="monotone" dataKey="p2TempMin" name="Min P2" stroke="var(--mantine-color-green-6)" strokeDasharray="3 3" strokeWidth={1} dot={false} opacity={0.7} />
                             </>
                         )}
                     </ComposedChart>
@@ -350,6 +352,6 @@ export const SeasonalityChart: React.FC<SeasonalityChartProps> = ({
                 year2={modalYear2}
                 data={modalData}
             />
-        </div>
+        </Card>
     );
 };

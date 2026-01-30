@@ -1,11 +1,12 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { Button, Card, Group, Select, SimpleGrid, Table, Text, TextInput, Title } from '@mantine/core';
 import { Timestamp, doc, getDoc } from 'firebase/firestore';
-import { db } from '../services/firebase';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { SeasonalityChart } from './SeasonalityChart';
-import { Download } from 'lucide-react';
-import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import { Download } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { db } from '../services/firebase';
+import { SeasonalityChart } from './SeasonalityChart';
 
 interface Intervention {
     id: string;
@@ -25,7 +26,7 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
     const [period1End, setPeriod1End] = useState('');
     const [period2Start, setPeriod2Start] = useState('');
     const [period2End, setPeriod2End] = useState('');
-    const [selectedType, setSelectedType] = useState('Tutti');
+    const [selectedType, setSelectedType] = useState<string | null>('Tutti');
 
     const [firestoreTypes, setFirestoreTypes] = useState<string[]>([]);
 
@@ -208,9 +209,10 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
         // Initialize data for all types found in the filtered range or all types if "Tutti"
         const relevantTypes = selectedType === 'Tutti'
             ? Array.from(new Set(interventions.map(i => normalizeType(i.type))))
-            : [normalizeType(selectedType)];
+            : [normalizeType(selectedType || 'tutti')];
 
         relevantTypes.forEach(type => {
+            if(type === 'Tutti') return;
             data[type] = { type, p1Amount: 0, p2Amount: 0, p1Count: 0, p2Count: 0 };
         });
 
@@ -218,7 +220,7 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
             const date = intervention.date.toDate().getTime();
             const type = normalizeType(intervention.type);
 
-            if (selectedType !== 'Tutti' && type !== normalizeType(selectedType)) return;
+            if (selectedType !== 'Tutti' && type !== normalizeType(selectedType || '')) return;
             if (!data[type]) {
                 // Initialize if not present (e.g. if it wasn't in the initial set but appeared later)
                 data[type] = { type, p1Amount: 0, p2Amount: 0, p1Count: 0, p2Count: 0 };
@@ -259,123 +261,65 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
     ];
 
     return (
-        <div className="card" style={{ marginBottom: '2rem' }} ref={componentRef}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <h3 style={{ fontSize: '1.25rem' }}>⚖️ Confronto Avanzato</h3>
-                <button
-                    onClick={handleDownloadPDF}
-                    className="btn"
-                    style={{
-                        background: 'var(--primary)',
-                        color: 'white',
-                        border: 'none',
-                        padding: '0.5rem 1rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem'
-                    }}
-                >
-                    <Download size={18} />
+        <Card shadow="sm" radius="md" withBorder mb="xl" ref={componentRef}>
+            <Group justify="space-between" mb="md">
+                <Title order={3}>⚖️ Confronto Avanzato</Title>
+                <Button variant="filled" onClick={handleDownloadPDF} leftSection={<Download size={18} />}>
                     <span className="hide-mobile">Scarica PDF</span>
-                </button>
-            </div>
+                </Button>
+            </Group>
 
             {/* Filters */}
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '1rem',
-                marginBottom: '2rem',
-                background: 'var(--background)',
-                padding: '1rem',
-                borderRadius: 'var(--radius)'
-            }}>
-                {/* Period 1 */}
-                <div>
-                    <label className="label" style={{ fontWeight: 'bold', color: 'var(--primary)' }}>Periodo 1 (Riferimento)</label>
-                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                        <select
-                            className="input"
-                            onChange={(e) => handleYearSelect(parseInt(e.target.value), 1)}
-                            defaultValue=""
-                            style={{ padding: '0.25rem' }}
-                        >
-                            <option value="" disabled>Anno rapido</option>
-                            {availableYears.map(year => (
-                                <option key={`p1-${year}`} value={year}>{year}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                        <input
-                            type="date"
-                            className="input"
-                            value={period1Start}
-                            onChange={(e) => setPeriod1Start(e.target.value)}
+            <Card withBorder radius="md" p="md" mb="xl" bg="gray.0">
+                <SimpleGrid cols={{ base: 1, md: 3 }} spacing="lg">
+                    {/* Period 1 */}
+                    <div>
+                        <Text c="indigo" fw={700} mb="xs">Periodo 1 (Riferimento)</Text>
+                         <Select
+                            placeholder="Anno rapido"
+                            data={availableYears.map(String)}
+                            onChange={(val) => val && handleYearSelect(parseInt(val), 1)}
+                            mb="xs"
                         />
-                        <input
-                            type="date"
-                            className="input"
-                            value={period1End}
-                            onChange={(e) => setPeriod1End(e.target.value)}
-                        />
+                        <SimpleGrid cols={{ base: 1, xs: 2 }} spacing="xs">
+                            <TextInput type="date" value={period1Start} onChange={(e) => setPeriod1Start(e.target.value)} />
+                            <TextInput type="date" value={period1End} onChange={(e) => setPeriod1End(e.target.value)} />
+                        </SimpleGrid>
                     </div>
-                </div>
 
-                {/* Period 2 */}
-                <div>
-                    <label className="label" style={{ fontWeight: 'bold', color: 'var(--success)' }}>Periodo 2 (Confronto)</label>
-                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                        <select
-                            className="input"
-                            onChange={(e) => handleYearSelect(parseInt(e.target.value), 2)}
-                            defaultValue=""
-                            style={{ padding: '0.25rem' }}
-                        >
-                            <option value="" disabled>Anno rapido</option>
-                            {availableYears.map(year => (
-                                <option key={`p2-${year}`} value={year}>{year}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                        <input
-                            type="date"
-                            className="input"
-                            value={period2Start}
-                            onChange={(e) => setPeriod2Start(e.target.value)}
+                    {/* Period 2 */}
+                    <div>
+                        <Text c="teal" fw={700} mb="xs">Periodo 2 (Confronto)</Text>
+                        <Select
+                            placeholder="Anno rapido"
+                            data={availableYears.map(String)}
+                            onChange={(val) => val && handleYearSelect(parseInt(val), 2)}
+                            mb="xs"
                         />
-                        <input
-                            type="date"
-                            className="input"
-                            value={period2End}
-                            onChange={(e) => setPeriod2End(e.target.value)}
-                        />
+                        <SimpleGrid cols={{ base: 1, xs: 2 }} spacing="xs">
+                            <TextInput type="date" value={period2Start} onChange={(e) => setPeriod2Start(e.target.value)} />
+                            <TextInput type="date" value={period2End} onChange={(e) => setPeriod2End(e.target.value)} />
+                        </SimpleGrid>
                     </div>
-                </div>
 
-                {/* Type Filter */}
-                <div>
-                    <label className="label">Tipologia</label>
-                    <select
-                        className="input"
-                        value={selectedType}
-                        onChange={(e) => setSelectedType(e.target.value)}
-                        style={{ height: '42px' }} // Match height of date inputs roughly
-                    >
-                        {interventionTypes.map(type => (
-                            <option key={type} value={type}>{type}</option>
-                        ))}
-                    </select>
-                </div>
-            </div>
+                    {/* Type Filter */}
+                    <div>
+                         <Text fw={600} mb="xs">Tipologia</Text>
+                         <Select
+                            data={interventionTypes}
+                            value={selectedType}
+                            onChange={setSelectedType}
+                        />
+                    </div>
+                </SimpleGrid>
+            </Card>
 
             {period1Start && period1End && period2Start && period2End && (
                 <>
                     {/* Charts */}
-                    <div id="comparison-charts" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
+                    <SimpleGrid cols={{ base: 1, md: 2 }} spacing="xl" mb="xl" id="comparison-charts">
                         <div style={{ height: '300px' }}>
-                            <h4 style={{ textAlign: 'center', marginBottom: '1rem' }}>Incassato (€)</h4>
+                            <Text ta="center" fw={600} mb="md">Incassato (€)</Text>
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={chartData}>
                                     <CartesianGrid strokeDasharray="3 3" />
@@ -385,7 +329,7 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
                                     <Bar dataKey="Incassato" radius={[4, 4, 0, 0]}>
                                         {
                                             chartData.map((_, index) => (
-                                                <Cell key={`cell-${index}`} fill={index === 0 ? 'var(--primary)' : 'var(--success)'} />
+                                                <Cell key={`cell-${index}`} fill={index === 0 ? 'var(--mantine-color-indigo-6)' : 'var(--mantine-color-teal-6)'} />
                                             ))
                                         }
                                     </Bar>
@@ -393,7 +337,7 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
                             </ResponsiveContainer>
                         </div>
                         <div style={{ height: '300px' }}>
-                            <h4 style={{ textAlign: 'center', marginBottom: '1rem' }}>Numero Interventi</h4>
+                            <Text ta="center" fw={600} mb="md">Numero Interventi</Text>
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={chartData}>
                                     <CartesianGrid strokeDasharray="3 3" />
@@ -403,14 +347,14 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
                                     <Bar dataKey="Interventi" radius={[4, 4, 0, 0]}>
                                         {
                                             chartData.map((_, index) => (
-                                                <Cell key={`cell-${index}`} fill={index === 0 ? 'var(--primary)' : 'var(--success)'} />
+                                                <Cell key={`cell-${index}`} fill={index === 0 ? 'var(--mantine-color-indigo-6)' : 'var(--mantine-color-teal-6)'} />
                                             ))
                                         }
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
-                    </div>
+                    </SimpleGrid>
 
                     {/* Seasonality Chart */}
                     <div id="seasonality-chart" style={{ marginBottom: '2rem' }}>
@@ -420,25 +364,25 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
                             period1End={period1End}
                             period2Start={period2Start}
                             period2End={period2End}
-                            selectedType={selectedType}
+                            selectedType={selectedType || 'Tutti'}
                         />
                     </div>
 
                     {/* Detailed Table */}
-                    <div id="comparison-table" style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-                            <thead>
-                                <tr style={{ background: 'var(--background)', borderBottom: '2px solid var(--border)' }}>
-                                    <th style={{ padding: '1rem', textAlign: 'left' }}>Tipologia</th>
-                                    <th style={{ padding: '1rem', textAlign: 'right', color: 'var(--primary)' }}>Incasso P1</th>
-                                    <th style={{ padding: '1rem', textAlign: 'right', color: 'var(--success)' }}>Incasso P2</th>
-                                    <th style={{ padding: '1rem', textAlign: 'right' }}>Diff. €</th>
-                                    <th style={{ padding: '1rem', textAlign: 'right', color: 'var(--primary)' }}>Interv. P1</th>
-                                    <th style={{ padding: '1rem', textAlign: 'right', color: 'var(--success)' }}>Interv. P2</th>
-                                    <th style={{ padding: '1rem', textAlign: 'right' }}>Diff. #</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                    <div id="comparison-table">
+                         <Table striped highlightOnHover withTableBorder>
+                            <Table.Thead>
+                                <Table.Tr>
+                                    <Table.Th>Tipologia</Table.Th>
+                                    <Table.Th style={{ textAlign: 'right', color: 'var(--mantine-color-indigo-6)' }}>Incasso P1</Table.Th>
+                                    <Table.Th style={{ textAlign: 'right', color: 'var(--mantine-color-teal-6)' }}>Incasso P2</Table.Th>
+                                    <Table.Th style={{ textAlign: 'right' }}>Diff. €</Table.Th>
+                                    <Table.Th style={{ textAlign: 'right', color: 'var(--mantine-color-indigo-6)' }}>Interv. P1</Table.Th>
+                                    <Table.Th style={{ textAlign: 'right', color: 'var(--mantine-color-teal-6)' }}>Interv. P2</Table.Th>
+                                    <Table.Th style={{ textAlign: 'right' }}>Diff. #</Table.Th>
+                                </Table.Tr>
+                            </Table.Thead>
+                            <Table.Tbody>
                                 {stats.map((stat) => {
                                     const diffAmount = stat.p2Amount - stat.p1Amount;
                                     const diffCount = stat.p2Count - stat.p1Count;
@@ -446,39 +390,39 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ interventions 
                                     const isPositiveCount = diffCount >= 0;
 
                                     return (
-                                        <tr key={stat.type} style={{ borderBottom: '1px solid var(--border)' }}>
-                                            <td style={{ padding: '1rem', fontWeight: 500 }}>{stat.type}</td>
-                                            <td style={{ padding: '1rem', textAlign: 'right' }}>€ {stat.p1Amount.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</td>
-                                            <td style={{ padding: '1rem', textAlign: 'right' }}>€ {stat.p2Amount.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</td>
-                                            <td style={{ padding: '1rem', textAlign: 'right', color: isPositiveAmount ? 'var(--success)' : 'var(--danger)', fontWeight: 'bold' }}>
+                                        <Table.Tr key={stat.type}>
+                                            <Table.Td fw={500}>{stat.type}</Table.Td>
+                                            <Table.Td style={{ textAlign: 'right' }}>€ {stat.p1Amount.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</Table.Td>
+                                            <Table.Td style={{ textAlign: 'right' }}>€ {stat.p2Amount.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</Table.Td>
+                                            <Table.Td style={{ textAlign: 'right', color: isPositiveAmount ? 'var(--mantine-color-teal-6)' : 'var(--mantine-color-red-6)', fontWeight: 'bold' }}>
                                                 {isPositiveAmount ? '+' : ''}€ {diffAmount.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
-                                            </td>
-                                            <td style={{ padding: '1rem', textAlign: 'right' }}>{stat.p1Count}</td>
-                                            <td style={{ padding: '1rem', textAlign: 'right' }}>{stat.p2Count}</td>
-                                            <td style={{ padding: '1rem', textAlign: 'right', color: isPositiveCount ? 'var(--success)' : 'var(--danger)', fontWeight: 'bold' }}>
+                                            </Table.Td>
+                                            <Table.Td style={{ textAlign: 'right' }}>{stat.p1Count}</Table.Td>
+                                            <Table.Td style={{ textAlign: 'right' }}>{stat.p2Count}</Table.Td>
+                                            <Table.Td style={{ textAlign: 'right', color: isPositiveCount ? 'var(--mantine-color-teal-6)' : 'var(--mantine-color-red-6)', fontWeight: 'bold' }}>
                                                 {isPositiveCount ? '+' : ''}{diffCount}
-                                            </td>
-                                        </tr>
+                                            </Table.Td>
+                                        </Table.Tr>
                                     );
                                 })}
-                                <tr style={{ background: 'var(--background)', fontWeight: 'bold', borderTop: '2px solid var(--border)' }}>
-                                    <td style={{ padding: '1rem' }}>TOTALE</td>
-                                    <td style={{ padding: '1rem', textAlign: 'right' }}>€ {totals.p1Amount.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</td>
-                                    <td style={{ padding: '1rem', textAlign: 'right' }}>€ {totals.p2Amount.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</td>
-                                    <td style={{ padding: '1rem', textAlign: 'right', color: (totals.p2Amount - totals.p1Amount) >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                                <Table.Tr style={{ fontWeight: 'bold', borderTop: '2px solid var(--mantine-color-gray-3)' }}>
+                                    <Table.Td>TOTALE</Table.Td>
+                                    <Table.Td style={{ textAlign: 'right' }}>€ {totals.p1Amount.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</Table.Td>
+                                    <Table.Td style={{ textAlign: 'right' }}>€ {totals.p2Amount.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</Table.Td>
+                                    <Table.Td style={{ textAlign: 'right', color: (totals.p2Amount - totals.p1Amount) >= 0 ? 'var(--mantine-color-teal-6)' : 'var(--mantine-color-red-6)' }}>
                                         {(totals.p2Amount - totals.p1Amount) >= 0 ? '+' : ''}€ {(totals.p2Amount - totals.p1Amount).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
-                                    </td>
-                                    <td style={{ padding: '1rem', textAlign: 'right' }}>{totals.p1Count}</td>
-                                    <td style={{ padding: '1rem', textAlign: 'right' }}>{totals.p2Count}</td>
-                                    <td style={{ padding: '1rem', textAlign: 'right', color: (totals.p2Count - totals.p1Count) >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                                    </Table.Td>
+                                    <Table.Td style={{ textAlign: 'right' }}>{totals.p1Count}</Table.Td>
+                                    <Table.Td style={{ textAlign: 'right' }}>{totals.p2Count}</Table.Td>
+                                    <Table.Td style={{ textAlign: 'right', color: (totals.p2Count - totals.p1Count) >= 0 ? 'var(--mantine-color-teal-6)' : 'var(--mantine-color-red-6)' }}>
                                         {(totals.p2Count - totals.p1Count) >= 0 ? '+' : ''}{totals.p2Count - totals.p1Count}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                    </Table.Td>
+                                </Table.Tr>
+                            </Table.Tbody>
+                        </Table>
                     </div>
                 </>
             )}
-        </div>
+        </Card>
     );
 };

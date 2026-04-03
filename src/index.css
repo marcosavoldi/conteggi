@@ -2,3 +2,14 @@
 body {
   background-color: var(--mantine-color-gray-1);
 }
+
+/* Prevent iOS Safari auto-zoom on input focus inside modals */
+.mantine-Modal-content input,
+.mantine-Modal-content select,
+.mantine-Modal-content textarea,
+.mantine-Modal-content .mantine-Select-input,
+.mantine-Modal-content .mantine-TextInput-input,
+.mantine-Modal-content .mantine-NumberInput-input,
+.mantine-Modal-content .mantine-Textarea-input {
+  font-size: 16px !important;
+}

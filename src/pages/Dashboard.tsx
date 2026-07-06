@@ -1,6 +1,6 @@
 import { ActionIcon, Affix, AppShell, Box, Button, Card, Container, Group, Modal, Select, SimpleGrid, Text, TextInput, ThemeIcon, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { collection, doc, getDoc, onSnapshot, orderBy, query, Timestamp, where } from 'firebase/firestore';
+import { collection, doc, getDoc, onSnapshot, orderBy, query, Timestamp, where, writeBatch } from 'firebase/firestore';
 import { Filter, LogOut, Plus, Settings } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -26,6 +26,8 @@ export const Dashboard: React.FC = () => {
     const [interventions, setInterventions] = useState<Intervention[]>([]);
     const [interventionTypes, setInterventionTypes] = useState<string[]>([]);
     const [opened, { open, close }] = useDisclosure(false);
+    const [migrating, setMigrating] = useState(false);
+
     // Filter States
     const [selectedType, setSelectedType] = useState<string | null>('Tutti');
     const [startDate, setStartDate] = useState(() => {
@@ -71,6 +73,32 @@ export const Dashboard: React.FC = () => {
 
         return () => unsubscribe();
     }, []);
+
+    const handleMigrate = async () => {
+        const toUpdate = interventions.filter(i => i.type.trim() === 'Zanzare');
+        if (toUpdate.length === 0) {
+            alert("Nessun documento 'Zanzare' da aggiornare.");
+            return;
+        }
+        
+        if (!window.confirm(`Trovati ${toUpdate.length} documenti da aggiornare. Procedo con la migrazione?`)) return;
+
+        setMigrating(true);
+        try {
+            const batch = writeBatch(db);
+            toUpdate.forEach(item => {
+                const docRef = doc(db, 'interventions', item.id);
+                batch.update(docRef, { type: 'Disinfestazione Zanzare' });
+            });
+            await batch.commit();
+            alert("Migrazione completata con successo!");
+        } catch (error) {
+            console.error("Errore migrazione:", error);
+            alert("Errore durante la migrazione dei dati.");
+        } finally {
+            setMigrating(false);
+        }
+    };
 
     // Filtered Data for Charts
     const filteredInterventions = useMemo(() => {
@@ -156,6 +184,9 @@ export const Dashboard: React.FC = () => {
                     <div style={{ marginBottom: '2rem' }}>
                         <Text size="lg" fw={500}>Bentornato,</Text>
                         <Text size="xl" fw={700} c="blue">{user?.displayName}</Text>
+                        <Button mt="md" color="yellow" onClick={handleMigrate} loading={migrating}>
+                            Migra "Zanzare" in "Disinfestazione Zanzare"
+                        </Button>
                     </div>
 
                     {/* Summary Cards */}
